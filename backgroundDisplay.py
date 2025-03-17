@@ -13,19 +13,19 @@ SCREEN_HEIGHT = int(info.current_h * 0.8)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Chargement et redimensionnement des images
-back = pygame.image.load("Image /Back.png")
+back = pygame.image.load("Image/Back.png")
 back = pygame.transform.scale(back, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-carlo = pygame.image.load("Image /Carlo.png")
+carlo = pygame.image.load("Image/Carlo.png")
 carlo = pygame.transform.scale(carlo, (288, 288))
 
-perso1 = pygame.image.load("Image /Perso1.png")
+perso1 = pygame.image.load("Image/Perso1.png")
 perso1 = pygame.transform.scale(perso1, (88, 256))
 
-balle_img = pygame.image.load("Image /balle.png")
+balle_img = pygame.image.load("Image/balle.png")
 balle_img = pygame.transform.scale(balle_img, (80, 80))
 
-lanceur_img = pygame.image.load("Image /lanceur.png")
+lanceur_img = pygame.image.load("Image/lanceur.png")
 lanceur_img = pygame.transform.scale(lanceur_img, (200, 200))
 
 # Retourner le lanceur de gauche
