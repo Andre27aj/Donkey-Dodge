@@ -54,8 +54,46 @@ class Joueur:
             self.on_ground = True
             self.velocity_y = 0
 
+    # Fonction pour générer une nouvelle hauteur
+    def nouvelle_hauteur(ancienne_hauteur):
+        while True:
+            nouvelle = random.randint(y_min, y_max)
+            if abs(nouvelle - ancienne_hauteur) > 50:
+                return nouvelle
+
+def creer_balle(x0, y0):
+    # Génération de la vitesse et de l'angle de tir
+    vitesse_min, vitesse_max = 15, 25
+    angle_min, angle_max = 10, 50
+    v0 = random.uniform(vitesse_min, vitesse_max)
+    angle = random.uniform(angle_min, angle_max)
+    angle_rad = np.radians(angle)
+
+    # Calcul des vitesses de la balle
+    vx = v0 * np.cos(angle_rad)  # Vitesse horizontale
+    vy = -v0 * np.sin(angle_rad)  # Vitesse verticale
+
+    return {"pos": [x0, y0], "vel": [vx, vy], "start_time": pygame.time.get_ticks(), "rotation": 0}
+
+# Fonction pour le lanceur gauche
+def lancer_gauche(balles, max_bananes, lanceur_gauche_rect):
+    if len(balles) < max_bananes:
+        balle = creer_balle(lanceur_gauche_rect.centerx, lanceur_gauche_rect.bottom)
+        balle["vel"][0] = abs(balle["vel"][0])  # Faire en sorte que la balle parte vers la droite
+        balles.append(balle)
+
+# Fonction pour le lanceur droit
+def lancer_droit(balles, max_bananes, lanceur_droite_rect):
+    if len(balles) < max_bananes:
+        balle = creer_balle(lanceur_droite_rect.centerx, lanceur_droite_rect.bottom)
+        balle["vel"][0] = -abs(balle["vel"][0])  # Faire en sorte que la balle parte vers la gauche
+        balles.append(balle)
+
 # Fonction principale du jeu
 def main_game():
+    # Définir les limites de vitesse pour les balles
+    vitesse_min, vitesse_max = 15, 35
+
     # Chargement et redimensionnement des images
     back = pygame.image.load("Image/Back.png")
     back = pygame.transform.scale(back, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -96,6 +134,10 @@ def main_game():
     y_lanceur_gauche = 0  # Position du lanceur gauche ajustée
     y_lanceur_droite = 0  # Position du lanceur droit ajustée
 
+    # Création des rectangles pour les lanceurs (déplacé ici)
+    lanceur_gauche_rect = pygame.Rect(x_gauche, y_lanceur_gauche, 200, 200)
+    lanceur_droite_rect = pygame.Rect(x_droite, y_lanceur_droite, 200, 200)
+
     # Interpolation fluide
     interpolation_factor = 0.05
 
@@ -103,62 +145,17 @@ def main_game():
     y_min = 50
     y_max = SCREEN_HEIGHT - 4  # Limite de hauteur pour la balle
 
-    # Paramètres des balles
-    vitesse_min, vitesse_max = 15, 35
     angle_min, angle_max = 10, 50
 
     g = 9.81
     dt = 0.05
 
-    # Temps pour les tirs des lanceurs (plus rapide)
-    next_launch_gauche = pygame.time.get_ticks() + random.randint(1000, 2000)
-    next_launch_droite = pygame.time.get_ticks() + random.randint(1000, 2000)
-
     balles = []
     dernier_tir_gauche = random.randint(y_min, y_max)
     dernier_tir_droite = random.randint(y_min, y_max)
 
-    # Fonction pour générer une nouvelle hauteur
-    def nouvelle_hauteur(ancienne_hauteur):
-        while True:
-            nouvelle = random.randint(y_min, y_max)
-            if abs(nouvelle - ancienne_hauteur) > 50:
-                return nouvelle
-
-    def creer_balle(x0, y0):
-        v0 = random.uniform(vitesse_min, vitesse_max)
-        angle = random.uniform(angle_min, angle_max)
-
-        # Trajectoire pour le lanceur gauche
-        if x0 == x_gauche:
-            angle = random.uniform(10, 30)  # Angle plus petit pour un lancer plus bas
-            v0 = random.uniform(15, 25)  # Vitesse plus faible pour une trajectoire plus douce
-            angle_rad = np.radians(angle)
-            vx = v0 * np.cos(angle_rad)  # vx positif pour aller vers la droite
-            vy = -v0 * np.sin(angle_rad)
-            direction = "droite"
-        # Trajectoire pour le lanceur droit
-        elif x0 == x_droite:
-            angle = random.uniform(30, 50)  # Angle plus grand pour un lancer plus haut
-            v0 = random.uniform(25, 35)  # Vitesse plus élevée pour une trajectoire plus rapide
-            angle_rad = np.radians(angle)
-            vx = -v0 * np.cos(angle_rad)  # vx négatif pour aller vers la gauche
-            vy = -v0 * np.sin(angle_rad)
-            direction = "gauche"
-        else:
-            angle_rad = np.radians(angle)
-            vx = -v0 * np.cos(angle_rad)
-            vy = -v0 * np.sin(angle_rad)
-            direction = "inconnue"  # Direction inconnue, peut être pour un cas d'erreur
-
-        return {"pos": [x0, y0], "vel": [vx, vy], "start_time": pygame.time.get_ticks(), "rotation": 0, "direction": direction}
-
     # Création du joueur
     joueur = Joueur("Image/Perso1.png", (SCREEN_WIDTH // 2 - 44, SCREEN_HEIGHT - 356 - 150))  # Position du joueur montée de 100px
-
-    # Création des rectangles pour les lanceurs
-    lanceur_gauche_rect = pygame.Rect(x_gauche, y_lanceur_gauche, 200, 200)
-    lanceur_droite_rect = pygame.Rect(x_droite, y_lanceur_droite, 200, 200)
 
     # Ajout de la variable pour la vitesse de déplacement des lanceurs
     lanceur_speed = 5
@@ -183,10 +180,13 @@ def main_game():
         if keys[pygame.K_s]:
             lanceur_gauche_rect.y += lanceur_speed
             lanceur_droite_rect.y += lanceur_speed
+        # Vérification de la touche 'E' pour tirer avec le lanceur gauche
+        if keys[pygame.K_q]:
+            lancer_gauche(balles, max_bananes, lanceur_gauche_rect)
+
+        # Vérification de la touche 'Q' pour tirer avec le lanceur droit
         if keys[pygame.K_e]:
-            if len(balles) < max_bananes:
-                balles.append(creer_balle(lanceur_gauche_rect.centerx, lanceur_gauche_rect.bottom))
-                balles.append(creer_balle(lanceur_droite_rect.centerx, lanceur_droite_rect.bottom))
+            lancer_droit(balles, max_bananes, lanceur_droite_rect)
 
         # Vérification des collisions avec les lanceurs
         if joueur.rect.colliderect(lanceur_gauche_rect):
@@ -203,18 +203,6 @@ def main_game():
             y_lanceur_gauche = joueur.floor_rect.top
         if y_lanceur_droite < joueur.floor_rect.top:
             y_lanceur_droite = joueur.floor_rect.top
-
-        # Tir du lanceur gauche
-        if current_time >= next_launch_gauche and abs(y_lanceur_gauche - dernier_tir_gauche) < 2 and len(balles) < max_bananes:
-            balles.append(creer_balle(x_gauche, y_lanceur_gauche + 50))
-            dernier_tir_gauche = nouvelle_hauteur(dernier_tir_gauche)
-            next_launch_gauche = current_time + random.randint(1000, 2000)
-
-        # Tir du lanceur droit
-        if current_time >= next_launch_droite and abs(y_lanceur_droite - dernier_tir_droite) < 2 and len(balles) < max_bananes:
-            balles.append(creer_balle(x_droite, y_lanceur_droite + 50))
-            dernier_tir_droite = nouvelle_hauteur(dernier_tir_droite)
-            next_launch_droite = current_time + random.randint(1000, 2000)
 
         # Mise à jour des balles
         for balle in balles:
