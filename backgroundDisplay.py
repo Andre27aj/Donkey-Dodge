@@ -136,6 +136,7 @@ def main_game():
             angle_rad = np.radians(angle)
             vx = v0 * np.cos(angle_rad)  # vx positif pour aller vers la droite
             vy = -v0 * np.sin(angle_rad)
+            direction = "droite"
         # Trajectoire pour le lanceur droit
         elif x0 == x_droite:
             angle = random.uniform(30, 50)  # Angle plus grand pour un lancer plus haut
@@ -143,15 +144,14 @@ def main_game():
             angle_rad = np.radians(angle)
             vx = -v0 * np.cos(angle_rad)  # vx négatif pour aller vers la gauche
             vy = -v0 * np.sin(angle_rad)
+            direction = "gauche"
         else:
             angle_rad = np.radians(angle)
-            vx = v0 * np.cos(angle_rad)
+            vx = -v0 * np.cos(angle_rad)
             vy = -v0 * np.sin(angle_rad)
+            direction = "inconnue"  # Direction inconnue, peut être pour un cas d'erreur
 
-        # Debug : Afficher la direction de la balle pour vérifier
-        print(f"Position lanceur: {x0}, Direction de la balle: {vx}, {vy}")
-
-        return {"pos": [x0, y0], "vel": [vx, vy], "start_time": pygame.time.get_ticks(), "rotation": 0}
+        return {"pos": [x0, y0], "vel": [vx, vy], "start_time": pygame.time.get_ticks(), "rotation": 0, "direction": direction}
 
     # Création du joueur
     joueur = Joueur("Image/Perso1.png", (SCREEN_WIDTH // 2 - 44, SCREEN_HEIGHT - 356 - 150))  # Position du joueur montée de 100px
