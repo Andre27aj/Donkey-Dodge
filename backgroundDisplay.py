@@ -10,10 +10,16 @@ pygame.init()
 info = pygame.display.Info()
 SCREEN_WIDTH = int(info.current_w * 0.8)
 SCREEN_HEIGHT = int(info.current_h * 0.8)
+# After getting SCREEN_WIDTH and SCREEN_HEIGHT
+REFERENCE_WIDTH = 1920
+REFERENCE_HEIGHT = 1080
+SCALE_X = SCREEN_WIDTH / REFERENCE_WIDTH
+SCALE_Y = SCREEN_HEIGHT / REFERENCE_HEIGHT
+SCALE_FACTOR = min(SCALE_X, SCALE_Y)  # Use smaller scale for consistency
 
 # Initialisation de l'écran avec une fenêtre de 80% de la taille de l'écran
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Mon Jeu avec Intro Vidéo")x
+pygame.display.set_caption("Mon Jeu avec Intro Vidéo")
 
 # Couleurs
 # Classe Joueur
@@ -24,39 +30,140 @@ class Joueur:
         self.rect = self.image.get_rect(topleft=position)
         self.velocity_x = 0
         self.velocity_y = 0
-        self.acceleration = 0.5
-        self.max_speed = 7
-        self.friction = 0.2
-        self.gravity = 1
+        self.previous_y = position[1]  # Store previous Y position
+
+        # Lives system
+        self.max_lives = 3
+        self.lives = self.max_lives
+        self.invincible = False
+        self.invincibility_timer = 0
+        self.invincibility_duration = int(60 * SCALE_FACTOR)
+
+        # UI elements
+        self.heart_size = int(30 * SCALE_FACTOR)
+        self.heart_spacing = int(10 * SCALE_FACTOR)
+
+        # Scaled physics values
+        self.acceleration = 0.2 * SCALE_FACTOR
+        self.max_speed = 7 * SCALE_FACTOR
+        self.friction = 0.2 * SCALE_FACTOR
+        self.gravity = 1 * SCALE_FACTOR
+
+        # Platform collision
         self.on_ground = False
         self.floor_rect = pygame.Rect(0, SCREEN_HEIGHT - 90, SCREEN_WIDTH, 20)
         self.ignore_platforms = []
         self.platform_touching = None
-        self.previous_y = position[1]  # Stocker la position Y précédente
-        self.base_jump_force = -20  # Base jump force
-        self.speed_jump_bonus = 0.5  # Multiplier for speed-based jump bonus
+
+        # Jump physics
+        self.base_jump_force = -20 * SCALE_FACTOR * 1.2  # Increased by 30%
+        self.speed_jump_bonus = 0.3 * SCALE_FACTOR
         self.jump_force = self.base_jump_force
         self.jump_charging = False
         self.jump_charge = 0
-        self.max_jump_charge = 30  # Maximum frames for charge
-        self.charge_bonus = 0.6  # Bonus multiplier for charging
-        self.normal_acceleration = 0.5  # Store original acceleration
-        self.normal_max_speed = 7  # Store original max speed
-        self.sprint_acceleration = 1.0  # Higher acceleration when sprinting
-        self.sprint_max_speed = 12  # Higher max speed when sprinting
-        self.sprint_jump_bonus = 1.2  # Additional jump boost while sprinting
+        self.max_jump_charge = 23  # Maximum frames for charge
+        self.charge_bonus = 0.6 * SCALE_FACTOR
+
+        # Sprint mechanics
+        self.normal_acceleration = 0.5 * SCALE_FACTOR
+        self.normal_max_speed = 7 * SCALE_FACTOR
+        self.sprint_acceleration = 1.0 * SCALE_FACTOR
+        self.sprint_max_speed = 12 * SCALE_FACTOR
+        self.sprint_jump_bonus = 1.2 * SCALE_FACTOR
         self.direction = 0  # 0 = none, -1 = left, 1 = right
         self.movement_time = 0  # Tracks how long player moves in same direction
         self.sprint_threshold = 20  # Frames before sprinting activates
         self.max_sprint_time = 60  # Maximum sprint acceleration
-        self.min_speed = 3  # Starting speed
-        self.max_speed = 12  # Maximum sprint speed
+        self.min_speed = 3 * SCALE_FACTOR  # Starting speed
+        self.max_speed = 12 * SCALE_FACTOR  # Maximum sprint speed
+        # Add these dash-related attributes after existing attributes
+        self.dash_available = True
+        self.dash_cooldown = 0
+        self.dash_cooldown_max = int(45 * SCALE_FACTOR)  # Longer cooldown for teleport
+        self.dash_distance = 200 * SCALE_FACTOR  # Distance to teleport
+        self.dash_ghost_frames = 5  # Number of ghost images to show
+        self.dash_ghosts = []  # Store positions for ghost effects
+        self.dash_ghost_timer = 0
+        self.dash_ghost_duration = 15  # How long ghosts remain visible
+
+    def take_damage(self):
+        if not self.invincible:
+            self.lives -= 1
+            self.invincible = True
+            self.invincibility_timer = 0
+            return True
+        return False
+
+    def update_invincibility(self):
+        if self.invincible:
+            self.invincibility_timer += 1
+            if self.invincibility_timer >= self.invincibility_duration:
+                self.invincible = False
+                self.invincibility_timer = 0
 
     def update(self, platforms):
+        self.update_invincibility()
         # Stocker la position Y précédente pour déterminer la direction du mouvement
         self.previous_y = self.rect.y
 
         keys = pygame.key.get_pressed()
+
+        # Update ghost positions if we have any
+        if self.dash_ghosts:
+            self.dash_ghost_timer += 1
+            if self.dash_ghost_timer >= self.dash_ghost_duration:
+                self.dash_ghosts = []
+                self.dash_ghost_timer = 0
+
+        # Dash cooldown management
+        if not self.dash_available:
+            self.dash_cooldown += 1
+            if self.dash_cooldown >= self.dash_cooldown_max:
+                self.dash_available = True
+                self.dash_cooldown = 0
+
+        # Stocker la position Y précédente pour déterminer la direction du mouvement
+        self.previous_y = self.rect.y
+
+        keys = pygame.key.get_pressed()
+
+        # Dash activation with LSHIFT key - teleport version
+        if keys[pygame.K_RSHIFT] and self.dash_available:
+            # Get direction for dash (use current direction or movement keys)
+            dash_direction = 0
+            if self.velocity_x > 0.5:
+                dash_direction = 1
+            elif self.velocity_x < -0.5:
+                dash_direction = -1
+            elif keys[pygame.K_RIGHT]:
+                dash_direction = 1
+            elif keys[pygame.K_LEFT]:
+                dash_direction = -1
+
+            # Only dash if we have a direction
+            if dash_direction != 0:
+                # Store current position for ghost effect
+                old_pos = self.rect.topleft
+
+                # Calculate dash distance
+                dash_x = dash_direction * self.dash_distance
+
+                # Store intermediate positions for ghost trail
+                self.dash_ghosts = []
+                for i in range(1, self.dash_ghost_frames + 1):
+                    ghost_x = old_pos[0] + (dash_x * i / self.dash_ghost_frames)
+                    self.dash_ghosts.append((ghost_x, old_pos[1]))
+
+                # Apply teleport
+                self.rect.x += dash_x
+
+                # Reset dash cooldown
+                self.dash_available = False
+                self.dash_cooldown = 0
+                self.dash_ghost_timer = 0
+
+                # Maintain vertical velocity but reduce horizontal momentum
+                self.velocity_x *= 0.3
 
         # Gestion des déplacements horizontaux avec accélération
         if keys[pygame.K_LEFT]:
@@ -133,6 +240,8 @@ class Joueur:
             # Reset charging state
             self.jump_charging = False
             self.jump_charge = 0
+            # For normal jumps
+
 
         # Descendre de la plateforme si on appuie sur la flèche du bas
         if keys[
@@ -188,6 +297,8 @@ class Joueur:
             self.platform_touching = None
 
 
+
+
 # Fonction pour générer une nouvelle hauteur
 def nouvelle_hauteur(ancienne_hauteur, y_min, y_max):
     while True:
@@ -222,10 +333,20 @@ def lancer_droit(balles, max_bananes, lanceur_droite_rect):
         balle["vel"][0] = -abs(balle["vel"][0])  # Faire en sorte que la balle parte vers la gauche
         balles.append(balle)
 
+def game_over():
+            font_size = int(74 * SCALE_FACTOR)
+            font = pygame.font.Font(None, font_size)
+            text = font.render("Game Over", True, (255, 0, 0))
+            screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.wait(2000)
 # Fonction principale du jeu
 def main_game():
     # Définir les limites de vitesse pour les balles
     vitesse_min, vitesse_max = 15, 35
+    # Add near the beginning of main_game()
+    heart_img = pygame.image.load("Image/heart.png")
+    heart_img = pygame.transform.scale(heart_img, (int(30 * SCALE_FACTOR), int(30 * SCALE_FACTOR)))
 
     # Chargement et redimensionnement des images
     back = pygame.image.load("Image/Back.png")
@@ -251,11 +372,18 @@ def main_game():
     platform2 = pygame.transform.scale(platform, (300, 300))
     platform3 = pygame.transform.scale(platform, (300, 300))
 
-    # Positions des plateformes
-    platformeH_display = platformeH.get_rect(topleft=(SCREEN_WIDTH // 2 - 170, SCREEN_HEIGHT // 2 - 100))
-    platform2_display = platform2.get_rect(topleft=(int(SCREEN_WIDTH * 0.75) - 150, int(SCREEN_HEIGHT * 0.65)))
-    platform3_display = platform3.get_rect(topleft=(int(SCREEN_WIDTH * 0.25) - 150, int(SCREEN_HEIGHT * 0.65)))
-
+    platformeH_display = platformeH.get_rect(topleft=(
+        SCREEN_WIDTH // 2 - 170,
+        SCREEN_HEIGHT // 2 - 50 + (50 * SCALE_FACTOR)  # Adjust based on scale
+    ))
+    platform2_display = platform2.get_rect(topleft=(
+        int(SCREEN_WIDTH * 0.75) - 150,
+        int(SCREEN_HEIGHT * 0.65) - (20 * SCALE_FACTOR)
+    ))
+    platform3_display = platform3.get_rect(topleft=(
+        int(SCREEN_WIDTH * 0.25) - 150,
+        int(SCREEN_HEIGHT * 0.65) - (20 * SCALE_FACTOR)
+    ))
     # Créer des boîtes de collision décalées vers le bas
     offset_y = 27  # Décalage pour la boîte de collision
     platformeH_rect = pygame.Rect(platformeH_display.x, platformeH_display.y + offset_y, 300, 20)
@@ -362,6 +490,20 @@ def main_game():
             rotated_balle = pygame.transform.rotate(balle_img, balle["rotation"])
             new_rect = rotated_balle.get_rect(center=(int(balle["pos"][0]), int(balle["pos"][1])))
             screen.blit(rotated_balle, new_rect.topleft)
+            # Check collision with player
+        for balle in balles[:]:
+            balle_rect = pygame.Rect(
+                balle["pos"][0] - 40 * SCALE_FACTOR,
+                balle["pos"][1] - 40 * SCALE_FACTOR,
+                80 * SCALE_FACTOR,
+                80 * SCALE_FACTOR
+            )
+            if joueur.rect.colliderect(balle_rect) and not joueur.invincible:
+                joueur.take_damage()
+                balles.remove(balle)
+                if joueur.lives <= 0:
+                    game_over()
+                    run = False
 
         # Draw collision boxes (for debugging)
         pygame.draw.rect(screen, (255, 0, 0), platformeH_rect, 2)
@@ -375,6 +517,41 @@ def main_game():
         # Afficher le joueur après tous les autres éléments
         screen.blit(joueur.image, joueur.rect.topleft)
         pygame.draw.rect(screen, (0, 255, 0), joueur.rect, 2)  # Boîte de collision du joueur
+        # Display scaled hearts
+        heart_margin = int(20 * SCALE_FACTOR)
+        heart_size = int(30 * SCALE_FACTOR)
+        heart_spacing = int(10 * SCALE_FACTOR)
+        for i in range(joueur.lives):
+            screen.blit(heart_img, (heart_margin + i * (heart_size + heart_spacing), heart_margin))
+        if joueur.invincible:
+            if joueur.invincibility_timer % 6 < 3:  # Flash effect
+                screen.blit(joueur.image, joueur.rect.topleft)
+        # Draw dash ghost trail if it exists
+        if joueur.dash_ghosts:
+            # Calculate alpha based on remaining time
+            alpha_factor = 1 - (joueur.dash_ghost_timer / joueur.dash_ghost_duration)
+
+            for i, ghost_pos in enumerate(joueur.dash_ghosts):
+                # Make ghosts progressively more transparent
+                ghost_alpha = int(200 * alpha_factor * (1 - i / len(joueur.dash_ghosts)))
+                ghost_img = joueur.image.copy()
+                ghost_img.set_alpha(ghost_alpha)
+                screen.blit(ghost_img, ghost_pos)
+
+        # Show dash cooldown indicator
+        if not joueur.dash_available:
+            cooldown_width = int(50 * SCALE_FACTOR)
+            cooldown_height = int(10 * SCALE_FACTOR)
+            cooldown_fill = int((joueur.dash_cooldown / joueur.dash_cooldown_max) * cooldown_width)
+            pygame.draw.rect(screen, (100, 100, 100),
+                             (joueur.rect.centerx - cooldown_width // 2,
+                              joueur.rect.top - 20,
+                              cooldown_width, cooldown_height))
+            pygame.draw.rect(screen, (0, 200, 255),
+                             (joueur.rect.centerx - cooldown_width // 2,
+                              joueur.rect.top - 20,
+                              cooldown_fill, cooldown_height))
+
 
         pygame.display.flip()
         clock.tick(60)  # Limiter à 60 FPS
