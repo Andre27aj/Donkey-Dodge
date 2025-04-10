@@ -15,6 +15,7 @@ SCREEN_HEIGHT = int(info.current_h * 0.8)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Mon Jeu avec Intro Vidéo")x
 
+# Couleurs
 # Classe Joueur
 class Joueur:
     def __init__(self, image_path, position):
