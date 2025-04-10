@@ -2,6 +2,8 @@ import pygame
 import numpy as np
 import random
 
+from PIL.ImageChops import offset
+
 pygame.init()
 
 # Obtenir la résolution de l'écran
@@ -11,7 +13,7 @@ SCREEN_HEIGHT = int(info.current_h * 0.8)
 
 # Initialisation de l'écran avec une fenêtre de 80% de la taille de l'écran
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Mon Jeu avec Intro Vidéo")
+pygame.display.set_caption("Mon Jeu avec Intro Vidéo")x
 
 # Classe Joueur
 class Joueur:
@@ -19,52 +21,182 @@ class Joueur:
         self.image = pygame.image.load(image_path)
         self.image = pygame.transform.scale(self.image, (88, 256))
         self.rect = self.image.get_rect(topleft=position)
+        self.velocity_x = 0
         self.velocity_y = 0
+        self.acceleration = 0.5
+        self.max_speed = 7
+        self.friction = 0.2
+        self.gravity = 1
         self.on_ground = False
-        self.floor_rect = pygame.Rect(0, SCREEN_HEIGHT - 90, SCREEN_WIDTH, 20)  # Sol abaissé de 100px
+        self.floor_rect = pygame.Rect(0, SCREEN_HEIGHT - 90, SCREEN_WIDTH, 20)
+        self.ignore_platforms = []
+        self.platform_touching = None
+        self.previous_y = position[1]  # Stocker la position Y précédente
+        self.base_jump_force = -20  # Base jump force
+        self.speed_jump_bonus = 0.5  # Multiplier for speed-based jump bonus
+        self.jump_force = self.base_jump_force
+        self.jump_charging = False
+        self.jump_charge = 0
+        self.max_jump_charge = 30  # Maximum frames for charge
+        self.charge_bonus = 0.6  # Bonus multiplier for charging
+        self.normal_acceleration = 0.5  # Store original acceleration
+        self.normal_max_speed = 7  # Store original max speed
+        self.sprint_acceleration = 1.0  # Higher acceleration when sprinting
+        self.sprint_max_speed = 12  # Higher max speed when sprinting
+        self.sprint_jump_bonus = 1.2  # Additional jump boost while sprinting
+        self.direction = 0  # 0 = none, -1 = left, 1 = right
+        self.movement_time = 0  # Tracks how long player moves in same direction
+        self.sprint_threshold = 20  # Frames before sprinting activates
+        self.max_sprint_time = 60  # Maximum sprint acceleration
+        self.min_speed = 3  # Starting speed
+        self.max_speed = 12  # Maximum sprint speed
 
     def update(self, platforms):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= 5
-        if keys[pygame.K_RIGHT]:
-            self.rect.x += 5
-        if keys[pygame.K_SPACE] and self.on_ground:
-            self.velocity_y = -20  # Augmenter la force du saut
-            self.on_ground = False
+        # Stocker la position Y précédente pour déterminer la direction du mouvement
+        self.previous_y = self.rect.y
 
-        self.velocity_y += 1  # Appliquer la gravité
+        keys = pygame.key.get_pressed()
+
+        # Gestion des déplacements horizontaux avec accélération
+        if keys[pygame.K_LEFT]:
+            self.velocity_x -= self.acceleration
+        elif keys[pygame.K_RIGHT]:
+            self.velocity_x += self.acceleration
+        else:
+            # Appliquer le frottement si aucune touche n'est pressée
+            if self.velocity_x > 0:
+                self.velocity_x -= self.friction
+            elif self.velocity_x < 0:
+                self.velocity_x += self.friction
+
+        # Limiter la vitesse maximale
+        self.velocity_x = max(-self.max_speed, min(self.max_speed, self.velocity_x))
+        # Determine direction
+        old_direction = self.direction
+        if keys[pygame.K_LEFT]:
+            self.direction = -1
+        elif keys[pygame.K_RIGHT]:
+            self.direction = 1
+        else:
+            self.direction = 0
+
+        # Reset movement timer if direction changed or stopped
+        if self.direction != old_direction:
+            self.movement_time = 0
+            self.velocity_x *= 0.5  # Slow down when changing direction
+
+        # Increment movement time if moving in a direction
+        if self.direction != 0:
+            self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
+
+            # Calculate speed based on movement time
+            sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
+            current_max_speed = self.min_speed + (self.max_speed - self.min_speed) * sprint_factor
+            self.sprinting = sprint_factor > 0.8  # Consider sprinting at 80% speed
+
+            # Apply acceleration in current direction
+            self.velocity_x += self.direction * self.acceleration
+        else:
+            # Apply friction when not pressing movement keys
+            if self.velocity_x > 0:
+                self.velocity_x -= self.friction
+            elif self.velocity_x < 0:
+                self.velocity_x += self.friction
+            self.sprinting = False
+            self.movement_time = 0
+
+        # Cap maximum speed based on current sprint state
+        max_current_speed = self.min_speed + (self.max_speed - self.min_speed) * (min(1.0, self.movement_time / self.sprint_threshold))
+        self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
+
+        # Sauter si on est sur le sol avec la flèche du haut
+        if keys[pygame.K_UP] and self.on_ground:
+            if self.on_ground and not self.jump_charging:
+                # Start charging jump
+                self.jump_charging = True
+                self.jump_charge = 0
+            elif self.jump_charging and self.on_ground:
+                # Continue charging up to max
+                if self.jump_charge < self.max_jump_charge:
+                    self.jump_charge += 1
+        else:
+            # Release jump button - execute the jump if charging
+            if self.jump_charging and self.on_ground:
+                # Calculate jump force based on horizontal speed AND charge
+                speed_bonus = abs(self.velocity_x) * self.speed_jump_bonus
+                charge_bonus = (self.jump_charge / self.max_jump_charge) * self.charge_bonus * self.base_jump_force
+                self.velocity_y = self.base_jump_force - speed_bonus - charge_bonus
+                self.on_ground = False
+                self.platform_touching = None
+
+            # Reset charging state
+            self.jump_charging = False
+            self.jump_charge = 0
+
+        # Descendre de la plateforme si on appuie sur la flèche du bas
+        if keys[
+            pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
+            self.ignore_platforms.append(self.platform_touching)
+            self.on_ground = False
+            self.velocity_y = 1
+            self.platform_touching = None
+
+        # Appliquer la gravité
+        self.velocity_y += self.gravity
+        self.rect.x += self.velocity_x
         self.rect.y += self.velocity_y
 
-        # Gérer les collisions avec les plateformes
+        # Gestion des collisions avec les plateformes
         self.on_ground = False
+        self.platform_touching = None
+
         for platform in platforms:
+            # Ignorer les plateformes dans la liste d'ignore
+            if platform in self.ignore_platforms:
+                continue
+
             if self.rect.colliderect(platform):
-                if self.velocity_y > 0 and self.rect.bottom <= platform.top:  # Si le joueur tombe et n'est pas en dessous
+                # Direction du mouvement (montant ou descendant)
+                moving_up = self.velocity_y < 0
+                moving_down = self.velocity_y > 0
+
+                if moving_down and self.previous_y + self.rect.height <= platform.top:
+                    # Collision par le haut de la plateforme
                     self.rect.bottom = platform.top
                     self.on_ground = True
                     self.velocity_y = 0
-                elif self.velocity_y < 0:  # Si le joueur saute
-                    self.rect.top = platform.bottom
-                    self.velocity_y = 0
+                    self.platform_touching = platform
+                # Ne pas bloquer le joueur lorsqu'il saute à travers une plateforme (pas de collision par le bas)
+
+        # Nettoyer la liste des plateformes ignorées
+        if self.velocity_y >= 0:  # Le joueur est en train de tomber ou est au sol
+            self.ignore_platforms = []
 
         # Gérer la collision avec le sol
         if self.rect.colliderect(self.floor_rect):
             self.rect.bottom = self.floor_rect.top
             self.on_ground = True
             self.velocity_y = 0
+            self.platform_touching = self.floor_rect
+            # Sauter si on est sur le sol avec la flèche du haut
+        if keys[pygame.K_UP] and self.on_ground:
+            # Calculate jump force based on horizontal speed
+            speed_bonus = abs(self.velocity_x) * self.speed_jump_bonus
+            self.velocity_y = self.base_jump_force - speed_bonus
+            self.on_ground = False
+            self.platform_touching = None
 
-    # Fonction pour générer une nouvelle hauteur
-    def nouvelle_hauteur(ancienne_hauteur):
-        while True:
-            nouvelle = random.randint(y_min, y_max)
-            if abs(nouvelle - ancienne_hauteur) > 50:
-                return nouvelle
 
-def creer_balle(x0, y0):
+# Fonction pour générer une nouvelle hauteur
+def nouvelle_hauteur(ancienne_hauteur, y_min, y_max):
+    while True:
+        nouvelle = random.randint(y_min, y_max)
+        if abs(nouvelle - ancienne_hauteur) > 50:
+            return nouvelle
+
+def creer_balle(x0, y0, angle_min=10, angle_max=50):
     # Génération de la vitesse et de l'angle de tir
-    vitesse_min, vitesse_max = 15, 25
-    angle_min, angle_max = 10, 50
+    vitesse_min, vitesse_max = 15, 50
     v0 = random.uniform(vitesse_min, vitesse_max)
     angle = random.uniform(angle_min, angle_max)
     angle_rad = np.radians(angle)
@@ -119,14 +251,15 @@ def main_game():
     platform3 = pygame.transform.scale(platform, (300, 300))
 
     # Positions des plateformes
-    platformeH_rect = platformeH.get_rect(topleft=(SCREEN_WIDTH/2-150, SCREEN_HEIGHT/2-100))
-    platform2_rect = platform2.get_rect(topleft=(SCREEN_WIDTH/3+500, SCREEN_HEIGHT - 370))  # Position abaissée
-    platform3_rect = platform3.get_rect(topleft=(SCREEN_WIDTH/3-300, SCREEN_HEIGHT - 370))  # Position abaissée
+    platformeH_display = platformeH.get_rect(topleft=(SCREEN_WIDTH // 2 - 170, SCREEN_HEIGHT // 2 - 100))
+    platform2_display = platform2.get_rect(topleft=(int(SCREEN_WIDTH * 0.75) - 150, int(SCREEN_HEIGHT * 0.65)))
+    platform3_display = platform3.get_rect(topleft=(int(SCREEN_WIDTH * 0.25) - 150, int(SCREEN_HEIGHT * 0.65)))
 
-    # Mettre à jour les dimensions des boîtes de collision des plateformes
-    platformeH_rect = pygame.Rect(platformeH_rect.topleft, (300, 50))  # Boîte de collision abaissée
-    platform2_rect = pygame.Rect(platform2_rect.topleft, (300, 50))  # Boîte de collision abaissée
-    platform3_rect = pygame.Rect(platform3_rect.topleft, (300, 50))  # Boîte de collision abaissée
+    # Créer des boîtes de collision décalées vers le bas
+    offset_y = 27  # Décalage pour la boîte de collision
+    platformeH_rect = pygame.Rect(platformeH_display.x, platformeH_display.y + offset_y, 300, 20)
+    platform2_rect = pygame.Rect(platform2_display.x, platform2_display.y + offset_y, 300, 20)
+    platform3_rect = pygame.Rect(platform3_display.x, platform3_display.y + offset_y, 300, 20)
 
     # Positions des lanceurs (ajustés pour ne pas être au milieu de l'image)
     x_gauche = -30  # Lanceur gauche plus proche du bord
@@ -158,11 +291,11 @@ def main_game():
     joueur = Joueur("Image/Perso1.png", (SCREEN_WIDTH // 2 - 44, SCREEN_HEIGHT - 356 - 150))  # Position du joueur montée de 100px
 
     # Ajout de la variable pour la vitesse de déplacement des lanceurs
-    lanceur_speed = 5
+    lanceur_speed = 10
 
     clock = pygame.time.Clock()
     run = True
-    max_bananes = 5  # Limite de bananes à l'écran
+    max_bananes = 4  # Limite de bananes à l'écran
     while run:
         current_time = pygame.time.get_ticks()
         for event in pygame.event.get():
@@ -219,21 +352,20 @@ def main_game():
         screen.blit(lanceur_gauche_img, lanceur_gauche_rect.topleft)
         screen.blit(lanceur_droite_img, lanceur_droite_rect.topleft)
 
-        # Affichage des plateformes
-        screen.blit(platformeH, platformeH_rect)
-        screen.blit(platform2, platform2_rect)
-        screen.blit(platform3, platform3_rect)
+        # Affichage des plateformes (UNIQUEMENT avec les rectangles d'affichage)
+        screen.blit(platformeH, platformeH_display)
+        screen.blit(platform2, platform2_display)
+        screen.blit(platform3, platform3_display)
 
         for balle in balles:
             rotated_balle = pygame.transform.rotate(balle_img, balle["rotation"])
             new_rect = rotated_balle.get_rect(center=(int(balle["pos"][0]), int(balle["pos"][1])))
             screen.blit(rotated_balle, new_rect.topleft)
 
-        # Dessiner les boîtes de collision des plateformes
-        pygame.draw.rect(screen, (255, 0, 0), platformeH_rect, 2)  # Rouge
-        pygame.draw.rect(screen, (255, 0, 0), platform2_rect, 2)  # Rouge
-        pygame.draw.rect(screen, (255, 0, 0), platform3_rect, 2)  # Rouge
-        pygame.draw.rect(screen, (0, 255, 0), joueur.floor_rect, 2)  # Dessiner la boîte de collision du sol en vert
+        # Draw collision boxes (for debugging)
+        pygame.draw.rect(screen, (255, 0, 0), platformeH_rect, 2)
+        pygame.draw.rect(screen, (255, 0, 0), platform2_rect, 2)
+        pygame.draw.rect(screen, (255, 0, 0), platform3_rect, 2)
 
         # Afficher les boîtes de collision des lanceurs
         pygame.draw.rect(screen, (0, 0, 255), lanceur_gauche_rect, 2)  # Bleu
@@ -241,6 +373,7 @@ def main_game():
 
         # Afficher le joueur après tous les autres éléments
         screen.blit(joueur.image, joueur.rect.topleft)
+        pygame.draw.rect(screen, (0, 255, 0), joueur.rect, 2)  # Boîte de collision du joueur
 
         pygame.display.flip()
         clock.tick(60)  # Limiter à 60 FPS
