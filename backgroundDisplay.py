@@ -25,12 +25,16 @@ pygame.display.set_caption("Mon Jeu avec Intro Vidéo")
 # Classe Joueur
 class Joueur:
     def __init__(self, image_path, position):
-        self.image = pygame.image.load(image_path)
-        self.image = pygame.transform.scale(self.image, (88, 256))
-        self.rect = self.image.get_rect(topleft=position)
+        # Base attributes
         self.velocity_x = 0
         self.velocity_y = 0
-        self.previous_y = position[1]  # Store previous Y position
+        self.previous_y = position[1]
+        self.rect = pygame.Rect(
+            position[0] + 30,  # Offset from left to center the hitbox
+            position[1] + 60,  # Slight offset from top to exclude character's head
+            100,  # Narrower width
+            200  # Slightly shorter height
+        )
 
         # Lives system
         self.max_lives = 3
@@ -43,11 +47,27 @@ class Joueur:
         self.heart_size = int(30 * SCALE_FACTOR)
         self.heart_spacing = int(10 * SCALE_FACTOR)
 
+        # Load animation images
+        self.load_animation_images()
+
+        # Animation state tracking
+        self.current_state = "idle"  # Can be "idle", "running", "jumping"
+        self.image = self.idle_images[0] if self.idle_images else pygame.Surface((100, 200))
+        self.facing_right = True
+
+        # Animation timing
+        self.idle_timer = 0
+        self.idle_threshold = 60  # 1 second at 60fps
+        self.current_frame = 0
+        self.animation_speed = 8  # Change frame every 8 game ticks
+        self.animation_counter = 0
+        self.is_idle = False
+
         # Scaled physics values
-        self.acceleration = 0.2 * SCALE_FACTOR
+        self.acceleration = 0.3 * SCALE_FACTOR
         self.max_speed = 7 * SCALE_FACTOR
         self.friction = 0.2 * SCALE_FACTOR
-        self.gravity = 1 * SCALE_FACTOR
+        self.gravity = 0.7 * SCALE_FACTOR
 
         # Platform collision
         self.on_ground = False
@@ -56,13 +76,13 @@ class Joueur:
         self.platform_touching = None
 
         # Jump physics
-        self.base_jump_force = -20 * SCALE_FACTOR * 1.2  # Increased by 30%
-        self.speed_jump_bonus = 0.3 * SCALE_FACTOR
+        self.base_jump_force = -25 * SCALE_FACTOR * 1.2
+        self.speed_jump_bonus = 0.5 * SCALE_FACTOR
         self.jump_force = self.base_jump_force
         self.jump_charging = False
         self.jump_charge = 0
-        self.max_jump_charge = 23  # Maximum frames for charge
-        self.charge_bonus = 0.6 * SCALE_FACTOR
+        self.max_jump_charge = 20
+        self.charge_bonus = 0.8 * SCALE_FACTOR
 
         # Sprint mechanics
         self.normal_acceleration = 0.5 * SCALE_FACTOR
@@ -70,232 +90,338 @@ class Joueur:
         self.sprint_acceleration = 1.0 * SCALE_FACTOR
         self.sprint_max_speed = 12 * SCALE_FACTOR
         self.sprint_jump_bonus = 1.2 * SCALE_FACTOR
-        self.direction = 0  # 0 = none, -1 = left, 1 = right
-        self.movement_time = 0  # Tracks how long player moves in same direction
-        self.sprint_threshold = 20  # Frames before sprinting activates
-        self.max_sprint_time = 60  # Maximum sprint acceleration
-        self.min_speed = 3 * SCALE_FACTOR  # Starting speed
-        self.max_speed = 12 * SCALE_FACTOR  # Maximum sprint speed
-        # Add these dash-related attributes after existing attributes
+        self.direction = 0
+        self.movement_time = 0
+        self.sprint_threshold = 20
+        self.max_sprint_time = 60
+        self.min_speed = 3 * SCALE_FACTOR
+        self.max_speed = 12 * SCALE_FACTOR
+        self.sprinting = False
+
+        # Dash mechanics
         self.dash_available = True
         self.dash_cooldown = 0
-        self.dash_cooldown_max = int(45 * SCALE_FACTOR)  # Longer cooldown for teleport
-        self.dash_distance = 200 * SCALE_FACTOR  # Distance to teleport
-        self.dash_ghost_frames = 5  # Number of ghost images to show
-        self.dash_ghosts = []  # Store positions for ghost effects
+        self.dash_cooldown_max = int(45 * SCALE_FACTOR)
+        self.dash_distance = 200 * SCALE_FACTOR
+        self.dash_ghost_frames = 5
+        self.dash_ghosts = []
         self.dash_ghost_timer = 0
-        self.dash_ghost_duration = 15  # How long ghosts remain visible
+        self.dash_ghost_duration = 15
 
-    def take_damage(self):
-        if not self.invincible:
-            self.lives -= 1
-            self.invincible = True
-            self.invincibility_timer = 0
-            return True
-        return False
+    def load_animation_images(self):
+        # Load idle images
+        self.idle_images = self.load_image_set("Image/Idle/Idle", 6)
 
-    def update_invincibility(self):
-        if self.invincible:
-            self.invincibility_timer += 1
-            if self.invincibility_timer >= self.invincibility_duration:
-                self.invincible = False
-                self.invincibility_timer = 0
+        # Load running images
+        self.run_images = self.load_image_set("Image/Course/Course", 6)
 
-    def update(self, platforms):
-        self.update_invincibility()
-        # Stocker la position Y précédente pour déterminer la direction du mouvement
-        self.previous_y = self.rect.y
+        # Load jumping images
+        self.jump_images = self.load_image_set("Image/Jump/Jump", 6)
 
-        keys = pygame.key.get_pressed()
+        # Fallback if any set is empty
+        if not self.idle_images:
+            fallback = pygame.Surface((100, 200))
+            fallback.fill((255, 0, 0))
+            self.idle_images = [fallback, fallback.copy()]
 
-        # Update ghost positions if we have any
-        if self.dash_ghosts:
-            self.dash_ghost_timer += 1
-            if self.dash_ghost_timer >= self.dash_ghost_duration:
-                self.dash_ghosts = []
-                self.dash_ghost_timer = 0
+        if not self.run_images:
+            self.run_images = self.idle_images.copy()
 
-        # Dash cooldown management
-        if not self.dash_available:
-            self.dash_cooldown += 1
-            if self.dash_cooldown >= self.dash_cooldown_max:
-                self.dash_available = True
-                self.dash_cooldown = 0
+        if not self.jump_images:
+            self.jump_images = self.idle_images.copy()
 
-        # Stocker la position Y précédente pour déterminer la direction du mouvement
-        self.previous_y = self.rect.y
-
-        keys = pygame.key.get_pressed()
-
-        # Dash activation with LSHIFT key - teleport version
-        if keys[pygame.K_RSHIFT] and self.dash_available:
-            # Get direction for dash (use current direction or movement keys)
-            dash_direction = 0
-            if self.velocity_x > 0.5:
-                dash_direction = 1
-            elif self.velocity_x < -0.5:
-                dash_direction = -1
-            elif keys[pygame.K_RIGHT]:
-                dash_direction = 1
-            elif keys[pygame.K_LEFT]:
-                dash_direction = -1
-
-            # Only dash if we have a direction
-            if dash_direction != 0:
-                # Store current position for ghost effect
-                old_pos = self.rect.topleft
-
-                # Calculate dash distance
-                dash_x = dash_direction * self.dash_distance
-
-                # Store intermediate positions for ghost trail
-                self.dash_ghosts = []
-                for i in range(1, self.dash_ghost_frames + 1):
-                    ghost_x = old_pos[0] + (dash_x * i / self.dash_ghost_frames)
-                    self.dash_ghosts.append((ghost_x, old_pos[1]))
-
-                # Apply teleport
-                self.rect.x += dash_x
-
-                # Reset dash cooldown
-                self.dash_available = False
-                self.dash_cooldown = 0
-                self.dash_ghost_timer = 0
-
-                # Maintain vertical velocity but reduce horizontal momentum
-                self.velocity_x *= 0.3
-
-        # Gestion des déplacements horizontaux avec accélération
-        if keys[pygame.K_LEFT]:
-            self.velocity_x -= self.acceleration
-        elif keys[pygame.K_RIGHT]:
-            self.velocity_x += self.acceleration
-        else:
-            # Appliquer le frottement si aucune touche n'est pressée
-            if self.velocity_x > 0:
-                self.velocity_x -= self.friction
-            elif self.velocity_x < 0:
-                self.velocity_x += self.friction
-
-        # Limiter la vitesse maximale
-        self.velocity_x = max(-self.max_speed, min(self.max_speed, self.velocity_x))
-        # Determine direction
-        old_direction = self.direction
-        if keys[pygame.K_LEFT]:
-            self.direction = -1
-        elif keys[pygame.K_RIGHT]:
-            self.direction = 1
-        else:
-            self.direction = 0
-
-        # Reset movement timer if direction changed or stopped
-        if self.direction != old_direction:
-            self.movement_time = 0
-            self.velocity_x *= 0.5  # Slow down when changing direction
-
-        # Increment movement time if moving in a direction
-        if self.direction != 0:
-            self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
-
-            # Calculate speed based on movement time
-            sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
-            current_max_speed = self.min_speed + (self.max_speed - self.min_speed) * sprint_factor
-            self.sprinting = sprint_factor > 0.8  # Consider sprinting at 80% speed
-
-            # Apply acceleration in current direction
-            self.velocity_x += self.direction * self.acceleration
-        else:
-            # Apply friction when not pressing movement keys
-            if self.velocity_x > 0:
-                self.velocity_x -= self.friction
-            elif self.velocity_x < 0:
-                self.velocity_x += self.friction
-            self.sprinting = False
-            self.movement_time = 0
-
-        # Cap maximum speed based on current sprint state
-        max_current_speed = self.min_speed + (self.max_speed - self.min_speed) * (min(1.0, self.movement_time / self.sprint_threshold))
-        self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
-
-        # Sauter si on est sur le sol avec la flèche du haut
-        if keys[pygame.K_UP] and self.on_ground:
-            if self.on_ground and not self.jump_charging:
-                # Start charging jump
-                self.jump_charging = True
-                self.jump_charge = 0
-            elif self.jump_charging and self.on_ground:
-                # Continue charging up to max
-                if self.jump_charge < self.max_jump_charge:
-                    self.jump_charge += 1
-        else:
-            # Release jump button - execute the jump if charging
-            if self.jump_charging and self.on_ground:
-                # Calculate jump force based on horizontal speed AND charge
-                speed_bonus = abs(self.velocity_x) * self.speed_jump_bonus
-                charge_bonus = (self.jump_charge / self.max_jump_charge) * self.charge_bonus * self.base_jump_force
-                self.velocity_y = self.base_jump_force - speed_bonus - charge_bonus
-                self.on_ground = False
-                self.platform_touching = None
-
-            # Reset charging state
-            self.jump_charging = False
-            self.jump_charge = 0
-            # For normal jumps
-
-
-        # Descendre de la plateforme si on appuie sur la flèche du bas
-        if keys[
-            pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
-            self.ignore_platforms.append(self.platform_touching)
-            self.on_ground = False
-            self.velocity_y = 1
-            self.platform_touching = None
-
-        # Appliquer la gravité
-        self.velocity_y += self.gravity
-        self.rect.x += self.velocity_x
-        self.rect.y += self.velocity_y
-
-        # Gestion des collisions avec les plateformes
-        self.on_ground = False
-        self.platform_touching = None
-
-        for platform in platforms:
-            # Ignorer les plateformes dans la liste d'ignore
-            if platform in self.ignore_platforms:
+def load_image_set(self, base_path, count):
+        images = []
+        for i in range(1, count + 1):
+            try:
+                img_path = f"{base_path}{i}.png"
+                # Print the path to help debug
+                print(f"Trying to load: {img_path}")
+                img = pygame.image.load(img_path)
+                img = pygame.transform.scale(img, (100, 200))
+                images.append(img)
+            except pygame.error as e:
+                print(f"Could not load image {base_path}{i}.png: {e}")
                 continue
 
-            if self.rect.colliderect(platform):
-                # Direction du mouvement (montant ou descendant)
-                moving_up = self.velocity_y < 0
-                moving_down = self.velocity_y > 0
 
-                if moving_down and self.previous_y + self.rect.height <= platform.top:
-                    # Collision par le haut de la plateforme
-                    self.rect.bottom = platform.top
-                    self.on_ground = True
-                    self.velocity_y = 0
-                    self.platform_touching = platform
-                # Ne pas bloquer le joueur lorsqu'il saute à travers une plateforme (pas de collision par le bas)
+        if not images:
+            print(f"No images found for path: {base_path}")
+            fallback = pygame.Surface((100, 200))
+            fallback.fill((255, 0, 0))  # Red fallback image
+            images = [fallback]
 
-        # Nettoyer la liste des plateformes ignorées
-        if self.velocity_y >= 0:  # Le joueur est en train de tomber ou est au sol
-            self.ignore_platforms = []
+        return images
+def update_player_image(self):
+        # Select the correct animation set based on state
+        if self.current_state == "idle":
+            current_images = self.idle_images
+        elif self.current_state == "running":
+            current_images = self.run_images
+        else:  # jumping
+            current_images = self.jump_images
 
-        # Gérer la collision avec le sol
-        if self.rect.colliderect(self.floor_rect):
-            self.rect.bottom = self.floor_rect.top
-            self.on_ground = True
-            self.velocity_y = 0
-            self.platform_touching = self.floor_rect
-            # Sauter si on est sur le sol avec la flèche du haut
-        if keys[pygame.K_UP] and self.on_ground:
+        # Ensure we don't go out of bounds
+        if self.current_frame >= len(current_images):
+            self.current_frame = 0
+
+        # Get the current frame from the appropriate animation set
+        current_img = current_images[self.current_frame]
+
+        # Apply direction
+        if self.facing_right:
+            self.image = current_img
+        else:
+            self.image = pygame.transform.flip(current_img, True, False)
+
+def take_damage(self):
+    if not self.invincible:
+        self.lives -= 1
+        self.invincible = True
+        self.invincibility_timer = 0
+        return True
+    return False
+
+def update_invincibility(self):
+    if self.invincible:
+        self.invincibility_timer += 1
+        if self.invincibility_timer >= self.invincibility_duration:
+            self.invincible = False
+            self.invincibility_timer = 0
+
+def update(self, platforms):
+    self.update_invincibility()
+    keys = pygame.key.get_pressed()
+
+    # REMOVED: Don't create a new player here
+    # joueur = Joueur("Image/Idle/Idle1.png", ...)
+
+    # Update ghost positions for dash effect
+    if self.dash_ghosts:
+        self.dash_ghost_timer += 1
+        if self.dash_ghost_timer >= self.dash_ghost_duration:
+            self.dash_ghosts = []
+            self.dash_ghost_timer = 0
+
+    # Dash cooldown management
+    if not self.dash_available:
+        self.dash_cooldown += 1
+        if self.dash_cooldown >= self.dash_cooldown_max:
+            self.dash_available = True
+            self.dash_cooldown = 0
+
+    # Store previous position
+    self.previous_y = self.rect.y
+
+    # Determine animation state based on movement
+    if not self.on_ground:
+        self.current_state = "jumping"
+    elif abs(self.velocity_x) > 0.5:
+        self.current_state = "running"
+        self.idle_timer = 0
+    else:
+        self.current_state = "idle"
+        self.idle_timer += 1
+        if self.idle_timer >= self.idle_threshold:
+            self.is_idle = True
+        else:
+            self.is_idle = False
+
+    # Update animation frames
+    self.animation_counter += 1
+    if self.animation_counter >= self.animation_speed:
+        self.animation_counter = 0
+        self.current_frame = (self.current_frame + 1) % len(
+            self.idle_images if self.current_state == "idle" else
+            self.run_images if self.current_state == "running" else
+            self.jump_images
+        )
+        self.update_player_image()
+
+    # Update facing direction based on velocity
+    if self.velocity_x > 0.5 and not self.facing_right:
+        self.facing_right = True
+    elif self.velocity_x < -0.5 and self.facing_right:
+        self.facing_right = False
+
+    # Handle dash activation
+    if keys[pygame.K_RSHIFT] and self.dash_available:
+        dash_direction = 0
+        if self.velocity_x > 0.5:
+            dash_direction = 1
+        elif self.velocity_x < -0.5:
+            dash_direction = -1
+        elif keys[pygame.K_RIGHT]:
+            dash_direction = 1
+        elif keys[pygame.K_LEFT]:
+            dash_direction = -1
+        elif self.facing_right:
+            dash_direction = 1
+        else:
+            dash_direction = -1
+
+        if dash_direction != 0:
+            # Store current position for ghost effect
+            old_pos = self.rect.topleft
+
+            # Calculate dash distance
+            dash_x = dash_direction * self.dash_distance
+
+            # Store intermediate positions for ghost trail
+            self.dash_ghosts = []
+            for i in range(1, self.dash_ghost_frames + 1):
+                ghost_x = old_pos[0] + (dash_x * i / self.dash_ghost_frames)
+                self.dash_ghosts.append((ghost_x, old_pos[1]))
+
+            # Apply teleport
+            self.rect.x += dash_x
+
+            # Reset dash cooldown
+            self.dash_available = False
+            self.dash_cooldown = 0
+            self.dash_ghost_timer = 0
+
+            # Maintain vertical velocity but reduce horizontal momentum
+            self.velocity_x *= 0.3
+
+    # Horizontal movement with acceleration
+    if keys[pygame.K_LEFT]:
+        self.velocity_x -= self.acceleration
+    elif keys[pygame.K_RIGHT]:
+        self.velocity_x += self.acceleration
+    else:
+        # Apply friction if no keys pressed
+        if self.velocity_x > 0:
+            self.velocity_x -= self.friction
+        elif self.velocity_x < 0:
+            self.velocity_x += self.friction
+
+    # Determine direction
+    old_direction = self.direction
+    if keys[pygame.K_LEFT]:
+        self.direction = -1
+    elif keys[pygame.K_RIGHT]:
+        self.direction = 1
+    else:
+        self.direction = 0
+
+    # Reset movement timer if direction changed or stopped
+    if self.direction != old_direction:
+        self.movement_time = 0
+        self.velocity_x *= 0.5  # Slow down when changing direction
+
+    # Increment movement time if moving in a direction
+    if self.direction != 0:
+        self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
+
+        # Calculate speed based on movement time
+        sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
+        current_max_speed = self.min_speed + (self.max_speed - self.min_speed) * sprint_factor
+        self.sprinting = sprint_factor > 0.8  # Consider sprinting at 80% speed
+
+        # Apply acceleration in current direction
+        self.velocity_x += self.direction * self.acceleration
+    else:
+        # Apply friction when not pressing movement keys
+        if self.velocity_x > 0:
+            self.velocity_x -= self.friction
+        elif self.velocity_x < 0:
+            self.velocity_x += self.friction
+        self.sprinting = False
+        self.movement_time = 0
+
+    # Cap maximum speed
+    max_current_speed = self.min_speed + (self.max_speed - self.min_speed) * (
+        min(1.0, self.movement_time / self.sprint_threshold))
+    self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
+
+    # Jumping with UP key
+    if keys[pygame.K_UP] and self.on_ground:
+        if not self.jump_charging:
+            # Start charging jump
+            self.jump_charging = True
+            self.jump_charge = 0
+        elif self.jump_charging:
+            # Continue charging up to max
+            if self.jump_charge < self.max_jump_charge:
+                self.jump_charge += 2.0
+    else:
+        # Release jump button - execute the jump if charging
+        if self.jump_charging and self.on_ground:
             # Calculate jump force based on horizontal speed
-            speed_bonus = abs(self.velocity_x) * self.speed_jump_bonus
-            self.velocity_y = self.base_jump_force - speed_bonus
+            horizontal_speed = abs(self.velocity_x)
+            speed_bonus = horizontal_speed * self.speed_jump_bonus * 2.0
+
+            # Sprint bonus
+            if self.sprinting:
+                speed_bonus *= 1.5
+
+            # Charge bonus calculation
+            charge_factor = self.jump_charge / self.max_jump_charge
+            charge_bonus = charge_factor * self.charge_bonus * self.base_jump_force
+
+            # Apply final jump velocity with all bonuses
+            final_jump_force = self.base_jump_force - speed_bonus - charge_bonus
+
+            # Ensure minimum jump height even without charging
+            if final_jump_force > -15 * SCALE_FACTOR:
+                final_jump_force = -15 * SCALE_FACTOR
+
+            self.velocity_y = final_jump_force
+
+            # Give an immediate boost upward to clear platforms
+            self.rect.y -= 8
+
             self.on_ground = False
             self.platform_touching = None
 
+        # Reset charging state
+        self.jump_charging = False
+        self.jump_charge = 0
+
+    # Drop from platform with DOWN key
+    if keys[
+        pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
+        self.ignore_platforms.append(self.platform_touching)
+        self.on_ground = False
+        self.velocity_y = 1
+        self.platform_touching = None
+
+    # Apply gravity and movement
+    self.velocity_y += self.gravity
+    self.rect.x += self.velocity_x
+    self.rect.y += self.velocity_y
+
+    # Platform collision handling
+    self.on_ground = False
+    self.platform_touching = None
+
+    for platform in platforms:
+        # Skip ignored platforms
+        if platform in self.ignore_platforms:
+            continue
+
+        if self.rect.colliderect(platform):
+            # Movement direction (up or down)
+            moving_down = self.velocity_y > 0
+
+            if moving_down and self.previous_y + self.rect.height <= platform.top:
+                # Collision from top of platform
+                self.rect.bottom = platform.top
+                self.on_ground = True
+                self.velocity_y = 0
+                self.platform_touching = platform
+
+    # Clean up ignored platforms list
+    if self.velocity_y >= 0:  # Player is falling or on ground
+        self.ignore_platforms = []
+
+    # Handle floor collision
+    if self.rect.colliderect(self.floor_rect):
+        self.rect.bottom = self.floor_rect.top
+        self.on_ground = True
+        self.velocity_y = 0
+        self.platform_touching = self.floor_rect
 
 
 
@@ -307,15 +433,15 @@ def nouvelle_hauteur(ancienne_hauteur, y_min, y_max):
             return nouvelle
 
 def creer_balle(x0, y0, angle_min=10, angle_max=50):
-    # Génération de la vitesse et de l'angle de tir
-    vitesse_min, vitesse_max = 15, 50
+    # Higher velocity ranges for more challenging gameplay
+    vitesse_min, vitesse_max = 5, 20  # Increased from 5, 25
     v0 = random.uniform(vitesse_min, vitesse_max)
     angle = random.uniform(angle_min, angle_max)
     angle_rad = np.radians(angle)
 
-    # Calcul des vitesses de la balle
-    vx = v0 * np.cos(angle_rad)  # Vitesse horizontale
-    vy = -v0 * np.sin(angle_rad)  # Vitesse verticale
+    # Calculate banana velocities
+    vx = v0 * np.cos(angle_rad)  # Horizontal velocity
+    vy = -v0 * np.sin(angle_rad)  # Vertical velocity
 
     return {"pos": [x0, y0], "vel": [vx, vy], "start_time": pygame.time.get_ticks(), "rotation": 0}
 
@@ -345,16 +471,15 @@ def main_game():
     # Définir les limites de vitesse pour les balles
     vitesse_min, vitesse_max = 15, 35
     # Add near the beginning of main_game()
+    joueur = Joueur("Image/Idle/Idle1.png",
+                    (SCREEN_WIDTH // 2 - 65, SCREEN_HEIGHT - 400 - 150))
+
     heart_img = pygame.image.load("Image/heart.png")
     heart_img = pygame.transform.scale(heart_img, (int(30 * SCALE_FACTOR), int(30 * SCALE_FACTOR)))
 
     # Chargement et redimensionnement des images
     back = pygame.image.load("Image/Back.png")
     back = pygame.transform.scale(back, (SCREEN_WIDTH, SCREEN_HEIGHT))
-
-    carlo = pygame.image.load("Image/Carlo.png")
-    carlo = pygame.transform.scale(carlo, (288, 288))
-
     balle_img = pygame.image.load("Image/balle.png")
     balle_img = pygame.transform.scale(balle_img, (80, 80))
 
@@ -417,19 +542,22 @@ def main_game():
     dernier_tir_droite = random.randint(y_min, y_max)
 
     # Création du joueur
-    joueur = Joueur("Image/Perso1.png", (SCREEN_WIDTH // 2 - 44, SCREEN_HEIGHT - 356 - 150))  # Position du joueur montée de 100px
-
     # Ajout de la variable pour la vitesse de déplacement des lanceurs
     lanceur_speed = 10
 
     clock = pygame.time.Clock()
     run = True
-    max_bananes = 4  # Limite de bananes à l'écran
+    max_bananes = 4
+    firing_cooldown = 500  # Milliseconds between shots
+    last_left_fire_time = 0
+    last_right_fire_time = 0
+    # Limite de bananes à l'écran
     while run:
         current_time = pygame.time.get_ticks()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+
 
         # Mise à jour du joueur
         joueur.update([platformeH_rect, platform2_rect, platform3_rect])
@@ -443,12 +571,45 @@ def main_game():
             lanceur_gauche_rect.y += lanceur_speed
             lanceur_droite_rect.y += lanceur_speed
         # Vérification de la touche 'E' pour tirer avec le lanceur gauche
-        if keys[pygame.K_q]:
-            lancer_gauche(balles, max_bananes, lanceur_gauche_rect)
+        current_time = pygame.time.get_ticks()
+        if keys[pygame.K_a]:
+            if current_time - last_left_fire_time >= firing_cooldown:
+                # Fire multiple bananas at once
+                num_bananas = 3  # Number of bananas to fire at once
+                for _ in range(num_bananas):
+                    if len(balles) < max_bananes:
+                        # Add slight variation to each banana
+                        angle_variation = random.uniform(-10, 10)
+                        speed_variation = random.uniform(0.9, 1.1)
+                        balle = creer_balle(
+                            lanceur_gauche_rect.centerx,
+                            lanceur_gauche_rect.bottom,
+                            angle_min + angle_variation,
+                            angle_max + angle_variation
+                        )
+                        balle["vel"][0] = abs(balle["vel"][0]) * speed_variation  # Make sure banana goes right
+                        balles.append(balle)
+                last_left_fire_time = current_time
 
-        # Vérification de la touche 'Q' pour tirer avec le lanceur droit
-        if keys[pygame.K_e]:
-            lancer_droit(balles, max_bananes, lanceur_droite_rect)
+        # For right launcher
+        if keys[pygame.K_d]:
+            if current_time - last_right_fire_time >= firing_cooldown:
+                # Fire multiple bananas at once
+                num_bananas = 3  # Number of bananas to fire at once
+                for _ in range(num_bananas):
+                    if len(balles) < max_bananes:
+                        # Add slight variation to each banana
+                        angle_variation = random.uniform(-10, 10)
+                        speed_variation = random.uniform(0.9, 1.1)
+                        balle = creer_balle(
+                            lanceur_droite_rect.centerx,
+                            lanceur_droite_rect.bottom,
+                            angle_min + angle_variation,
+                            angle_max + angle_variation
+                        )
+                        balle["vel"][0] = -abs(balle["vel"][0]) * speed_variation  # Make sure banana goes left
+                        balles.append(balle)
+                last_right_fire_time = current_time
 
         # Vérification des collisions avec les lanceurs
         if joueur.rect.colliderect(lanceur_gauche_rect):
@@ -472,6 +633,7 @@ def main_game():
             balle["pos"][0] += balle["vel"][0] * dt * 50
             balle["pos"][1] += balle["vel"][1] * dt * 50
             balle["rotation"] += 5
+
 
         # Supprimer les balles qui sortent de l'écran
         balles = [b for b in balles if b["pos"][1] <= SCREEN_HEIGHT]
