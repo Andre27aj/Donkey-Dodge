@@ -110,13 +110,13 @@ class Joueur:
 
     def load_animation_images(self):
         # Load idle images
-        self.idle_images = self.load_image_set("Image/Idle/Idle", 6)
+        self.idle_images = self.load_image_set("Image/Idle/Idle", 5)
 
         # Load running images
-        self.run_images = self.load_image_set("Image/Course/Course", 6)
+        self.run_images = self.load_image_set("Image/Course/Course", 5)
 
         # Load jumping images
-        self.jump_images = self.load_image_set("Image/Jump/Jump", 6)
+        self.jump_images = self.load_image_set("Image/Jump/Jump", 2)
 
         # Fallback if any set is empty
         if not self.idle_images:
@@ -130,7 +130,7 @@ class Joueur:
         if not self.jump_images:
             self.jump_images = self.idle_images.copy()
 
-def load_image_set(self, base_path, count):
+    def load_image_set(self, base_path, count):
         images = []
         for i in range(1, count + 1):
             try:
@@ -144,7 +144,6 @@ def load_image_set(self, base_path, count):
                 print(f"Could not load image {base_path}{i}.png: {e}")
                 continue
 
-
         if not images:
             print(f"No images found for path: {base_path}")
             fallback = pygame.Surface((100, 200))
@@ -152,7 +151,8 @@ def load_image_set(self, base_path, count):
             images = [fallback]
 
         return images
-def update_player_image(self):
+
+    def update_player_image(self):
         # Select the correct animation set based on state
         if self.current_state == "idle":
             current_images = self.idle_images
@@ -174,254 +174,254 @@ def update_player_image(self):
         else:
             self.image = pygame.transform.flip(current_img, True, False)
 
-def take_damage(self):
-    if not self.invincible:
-        self.lives -= 1
-        self.invincible = True
-        self.invincibility_timer = 0
-        return True
-    return False
-
-def update_invincibility(self):
-    if self.invincible:
-        self.invincibility_timer += 1
-        if self.invincibility_timer >= self.invincibility_duration:
-            self.invincible = False
+    def take_damage(self):
+        if not self.invincible:
+            self.lives -= 1
+            self.invincible = True
             self.invincibility_timer = 0
+            return True
+        return False
 
-def update(self, platforms):
-    self.update_invincibility()
-    keys = pygame.key.get_pressed()
+    def update_invincibility(self):
+        if self.invincible:
+            self.invincibility_timer += 1
+            if self.invincibility_timer >= self.invincibility_duration:
+                self.invincible = False
+                self.invincibility_timer = 0
+
+    def update(self, platforms):
+        self.update_invincibility()
+        keys = pygame.key.get_pressed()
 
     # REMOVED: Don't create a new player here
     # joueur = Joueur("Image/Idle/Idle1.png", ...)
 
     # Update ghost positions for dash effect
-    if self.dash_ghosts:
-        self.dash_ghost_timer += 1
-        if self.dash_ghost_timer >= self.dash_ghost_duration:
-            self.dash_ghosts = []
-            self.dash_ghost_timer = 0
+        if self.dash_ghosts:
+            self.dash_ghost_timer += 1
+            if self.dash_ghost_timer >= self.dash_ghost_duration:
+                self.dash_ghosts = []
+                self.dash_ghost_timer = 0
 
-    # Dash cooldown management
-    if not self.dash_available:
-        self.dash_cooldown += 1
-        if self.dash_cooldown >= self.dash_cooldown_max:
-            self.dash_available = True
-            self.dash_cooldown = 0
+        # Dash cooldown management
+        if not self.dash_available:
+            self.dash_cooldown += 1
+            if self.dash_cooldown >= self.dash_cooldown_max:
+                self.dash_available = True
+                self.dash_cooldown = 0
 
-    # Store previous position
-    self.previous_y = self.rect.y
+        # Store previous position
+        self.previous_y = self.rect.y
 
-    # Determine animation state based on movement
-    if not self.on_ground:
-        self.current_state = "jumping"
-    elif abs(self.velocity_x) > 0.5:
-        self.current_state = "running"
-        self.idle_timer = 0
-    else:
-        self.current_state = "idle"
-        self.idle_timer += 1
-        if self.idle_timer >= self.idle_threshold:
-            self.is_idle = True
+        # Determine animation state based on movement
+        if not self.on_ground:
+            self.current_state = "jumping"
+        elif abs(self.velocity_x) > 0.5:
+            self.current_state = "running"
+            self.idle_timer = 0
         else:
-            self.is_idle = False
+            self.current_state = "idle"
+            self.idle_timer += 1
+            if self.idle_timer >= self.idle_threshold:
+                self.is_idle = True
+            else:
+                self.is_idle = False
 
-    # Update animation frames
-    self.animation_counter += 1
-    if self.animation_counter >= self.animation_speed:
-        self.animation_counter = 0
-        self.current_frame = (self.current_frame + 1) % len(
-            self.idle_images if self.current_state == "idle" else
-            self.run_images if self.current_state == "running" else
-            self.jump_images
-        )
-        self.update_player_image()
+        # Update animation frames
+        self.animation_counter += 1
+        if self.animation_counter >= self.animation_speed:
+            self.animation_counter = 0
+            self.current_frame = (self.current_frame + 1) % len(
+                self.idle_images if self.current_state == "idle" else
+                self.run_images if self.current_state == "running" else
+                self.jump_images
+            )
+            self.update_player_image()
 
-    # Update facing direction based on velocity
-    if self.velocity_x > 0.5 and not self.facing_right:
-        self.facing_right = True
-    elif self.velocity_x < -0.5 and self.facing_right:
-        self.facing_right = False
+        # Update facing direction based on velocity
+        if self.velocity_x > 0.5 and not self.facing_right:
+            self.facing_right = True
+        elif self.velocity_x < -0.5 and self.facing_right:
+            self.facing_right = False
 
-    # Handle dash activation
-    if keys[pygame.K_RSHIFT] and self.dash_available:
-        dash_direction = 0
-        if self.velocity_x > 0.5:
-            dash_direction = 1
-        elif self.velocity_x < -0.5:
-            dash_direction = -1
+        # Handle dash activation
+        if keys[pygame.K_RSHIFT] and self.dash_available:
+            dash_direction = 0
+            if self.velocity_x > 0.5:
+                dash_direction = 1
+            elif self.velocity_x < -0.5:
+                dash_direction = -1
+            elif keys[pygame.K_RIGHT]:
+                dash_direction = 1
+            elif keys[pygame.K_LEFT]:
+                dash_direction = -1
+            elif self.facing_right:
+                dash_direction = 1
+            else:
+                dash_direction = -1
+
+            if dash_direction != 0:
+                # Store current position for ghost effect
+                old_pos = self.rect.topleft
+
+                # Calculate dash distance
+                dash_x = dash_direction * self.dash_distance
+
+                # Store intermediate positions for ghost trail
+                self.dash_ghosts = []
+                for i in range(1, self.dash_ghost_frames + 1):
+                    ghost_x = old_pos[0] + (dash_x * i / self.dash_ghost_frames)
+                    self.dash_ghosts.append((ghost_x, old_pos[1]))
+
+                # Apply teleport
+                self.rect.x += dash_x
+
+                # Reset dash cooldown
+                self.dash_available = False
+                self.dash_cooldown = 0
+                self.dash_ghost_timer = 0
+
+                # Maintain vertical velocity but reduce horizontal momentum
+                self.velocity_x *= 0.3
+
+        # Horizontal movement with acceleration
+        if keys[pygame.K_LEFT]:
+            self.velocity_x -= self.acceleration
         elif keys[pygame.K_RIGHT]:
-            dash_direction = 1
-        elif keys[pygame.K_LEFT]:
-            dash_direction = -1
-        elif self.facing_right:
-            dash_direction = 1
+            self.velocity_x += self.acceleration
         else:
-            dash_direction = -1
+            # Apply friction if no keys pressed
+            if self.velocity_x > 0:
+                self.velocity_x -= self.friction
+            elif self.velocity_x < 0:
+                self.velocity_x += self.friction
 
-        if dash_direction != 0:
-            # Store current position for ghost effect
-            old_pos = self.rect.topleft
+        # Determine direction
+        old_direction = self.direction
+        if keys[pygame.K_LEFT]:
+            self.direction = -1
+        elif keys[pygame.K_RIGHT]:
+            self.direction = 1
+        else:
+            self.direction = 0
 
-            # Calculate dash distance
-            dash_x = dash_direction * self.dash_distance
+        # Reset movement timer if direction changed or stopped
+        if self.direction != old_direction:
+            self.movement_time = 0
+            self.velocity_x *= 0.5  # Slow down when changing direction
 
-            # Store intermediate positions for ghost trail
-            self.dash_ghosts = []
-            for i in range(1, self.dash_ghost_frames + 1):
-                ghost_x = old_pos[0] + (dash_x * i / self.dash_ghost_frames)
-                self.dash_ghosts.append((ghost_x, old_pos[1]))
+        # Increment movement time if moving in a direction
+        if self.direction != 0:
+            self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
 
-            # Apply teleport
-            self.rect.x += dash_x
+            # Calculate speed based on movement time
+            sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
+            current_max_speed = self.min_speed + (self.max_speed - self.min_speed) * sprint_factor
+            self.sprinting = sprint_factor > 0.8  # Consider sprinting at 80% speed
 
-            # Reset dash cooldown
-            self.dash_available = False
-            self.dash_cooldown = 0
-            self.dash_ghost_timer = 0
+            # Apply acceleration in current direction
+            self.velocity_x += self.direction * self.acceleration
+        else:
+            # Apply friction when not pressing movement keys
+            if self.velocity_x > 0:
+                self.velocity_x -= self.friction
+            elif self.velocity_x < 0:
+                self.velocity_x += self.friction
+            self.sprinting = False
+            self.movement_time = 0
 
-            # Maintain vertical velocity but reduce horizontal momentum
-            self.velocity_x *= 0.3
+        # Cap maximum speed
+        max_current_speed = self.min_speed + (self.max_speed - self.min_speed) * (
+            min(1.0, self.movement_time / self.sprint_threshold))
+        self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
 
-    # Horizontal movement with acceleration
-    if keys[pygame.K_LEFT]:
-        self.velocity_x -= self.acceleration
-    elif keys[pygame.K_RIGHT]:
-        self.velocity_x += self.acceleration
-    else:
-        # Apply friction if no keys pressed
-        if self.velocity_x > 0:
-            self.velocity_x -= self.friction
-        elif self.velocity_x < 0:
-            self.velocity_x += self.friction
+        # Jumping with UP key
+        if keys[pygame.K_UP] and self.on_ground:
+            if not self.jump_charging:
+                # Start charging jump
+                self.jump_charging = True
+                self.jump_charge = 0
+            elif self.jump_charging:
+                # Continue charging up to max
+                if self.jump_charge < self.max_jump_charge:
+                    self.jump_charge += 2.0
+        else:
+            # Release jump button - execute the jump if charging
+            if self.jump_charging and self.on_ground:
+                # Calculate jump force based on horizontal speed
+                horizontal_speed = abs(self.velocity_x)
+                speed_bonus = horizontal_speed * self.speed_jump_bonus * 2.0
 
-    # Determine direction
-    old_direction = self.direction
-    if keys[pygame.K_LEFT]:
-        self.direction = -1
-    elif keys[pygame.K_RIGHT]:
-        self.direction = 1
-    else:
-        self.direction = 0
+                # Sprint bonus
+                if self.sprinting:
+                    speed_bonus *= 1.5
 
-    # Reset movement timer if direction changed or stopped
-    if self.direction != old_direction:
-        self.movement_time = 0
-        self.velocity_x *= 0.5  # Slow down when changing direction
+                # Charge bonus calculation
+                charge_factor = self.jump_charge / self.max_jump_charge
+                charge_bonus = charge_factor * self.charge_bonus * self.base_jump_force
 
-    # Increment movement time if moving in a direction
-    if self.direction != 0:
-        self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
+                # Apply final jump velocity with all bonuses
+                final_jump_force = self.base_jump_force - speed_bonus - charge_bonus
 
-        # Calculate speed based on movement time
-        sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
-        current_max_speed = self.min_speed + (self.max_speed - self.min_speed) * sprint_factor
-        self.sprinting = sprint_factor > 0.8  # Consider sprinting at 80% speed
+                # Ensure minimum jump height even without charging
+                if final_jump_force > -15 * SCALE_FACTOR:
+                    final_jump_force = -15 * SCALE_FACTOR
 
-        # Apply acceleration in current direction
-        self.velocity_x += self.direction * self.acceleration
-    else:
-        # Apply friction when not pressing movement keys
-        if self.velocity_x > 0:
-            self.velocity_x -= self.friction
-        elif self.velocity_x < 0:
-            self.velocity_x += self.friction
-        self.sprinting = False
-        self.movement_time = 0
+                self.velocity_y = final_jump_force
 
-    # Cap maximum speed
-    max_current_speed = self.min_speed + (self.max_speed - self.min_speed) * (
-        min(1.0, self.movement_time / self.sprint_threshold))
-    self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
+                # Give an immediate boost upward to clear platforms
+                self.rect.y -= 8
 
-    # Jumping with UP key
-    if keys[pygame.K_UP] and self.on_ground:
-        if not self.jump_charging:
-            # Start charging jump
-            self.jump_charging = True
+                self.on_ground = False
+                self.platform_touching = None
+
+            # Reset charging state
+            self.jump_charging = False
             self.jump_charge = 0
-        elif self.jump_charging:
-            # Continue charging up to max
-            if self.jump_charge < self.max_jump_charge:
-                self.jump_charge += 2.0
-    else:
-        # Release jump button - execute the jump if charging
-        if self.jump_charging and self.on_ground:
-            # Calculate jump force based on horizontal speed
-            horizontal_speed = abs(self.velocity_x)
-            speed_bonus = horizontal_speed * self.speed_jump_bonus * 2.0
 
-            # Sprint bonus
-            if self.sprinting:
-                speed_bonus *= 1.5
-
-            # Charge bonus calculation
-            charge_factor = self.jump_charge / self.max_jump_charge
-            charge_bonus = charge_factor * self.charge_bonus * self.base_jump_force
-
-            # Apply final jump velocity with all bonuses
-            final_jump_force = self.base_jump_force - speed_bonus - charge_bonus
-
-            # Ensure minimum jump height even without charging
-            if final_jump_force > -15 * SCALE_FACTOR:
-                final_jump_force = -15 * SCALE_FACTOR
-
-            self.velocity_y = final_jump_force
-
-            # Give an immediate boost upward to clear platforms
-            self.rect.y -= 8
-
+        # Drop from platform with DOWN key
+        if keys[
+            pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
+            self.ignore_platforms.append(self.platform_touching)
             self.on_ground = False
+            self.velocity_y = 1
             self.platform_touching = None
 
-        # Reset charging state
-        self.jump_charging = False
-        self.jump_charge = 0
+        # Apply gravity and movement
+        self.velocity_y += self.gravity
+        self.rect.x += self.velocity_x
+        self.rect.y += self.velocity_y
 
-    # Drop from platform with DOWN key
-    if keys[
-        pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
-        self.ignore_platforms.append(self.platform_touching)
+        # Platform collision handling
         self.on_ground = False
-        self.velocity_y = 1
         self.platform_touching = None
 
-    # Apply gravity and movement
-    self.velocity_y += self.gravity
-    self.rect.x += self.velocity_x
-    self.rect.y += self.velocity_y
+        for platform in platforms:
+            # Skip ignored platforms
+            if platform in self.ignore_platforms:
+                continue
 
-    # Platform collision handling
-    self.on_ground = False
-    self.platform_touching = None
+            if self.rect.colliderect(platform):
+                # Movement direction (up or down)
+                moving_down = self.velocity_y > 0
 
-    for platform in platforms:
-        # Skip ignored platforms
-        if platform in self.ignore_platforms:
-            continue
+                if moving_down and self.previous_y + self.rect.height <= platform.top:
+                    # Collision from top of platform
+                    self.rect.bottom = platform.top
+                    self.on_ground = True
+                    self.velocity_y = 0
+                    self.platform_touching = platform
 
-        if self.rect.colliderect(platform):
-            # Movement direction (up or down)
-            moving_down = self.velocity_y > 0
+        # Clean up ignored platforms list
+        if self.velocity_y >= 0:  # Player is falling or on ground
+            self.ignore_platforms = []
 
-            if moving_down and self.previous_y + self.rect.height <= platform.top:
-                # Collision from top of platform
-                self.rect.bottom = platform.top
-                self.on_ground = True
-                self.velocity_y = 0
-                self.platform_touching = platform
-
-    # Clean up ignored platforms list
-    if self.velocity_y >= 0:  # Player is falling or on ground
-        self.ignore_platforms = []
-
-    # Handle floor collision
-    if self.rect.colliderect(self.floor_rect):
-        self.rect.bottom = self.floor_rect.top
-        self.on_ground = True
-        self.velocity_y = 0
-        self.platform_touching = self.floor_rect
+        # Handle floor collision
+        if self.rect.colliderect(self.floor_rect):
+            self.rect.bottom = self.floor_rect.top
+            self.on_ground = True
+            self.velocity_y = 0
+            self.platform_touching = self.floor_rect
 
 
 
