@@ -1,28 +1,14 @@
 import pygame
-import numpy as np
 import random
+from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
+from lanceur import *
+from fonc import *
+from lanceur import *
 
 from PIL.ImageChops import offset
 
 pygame.init()
 
-# Obtenir la résolution de l'écran
-info = pygame.display.Info()
-SCREEN_WIDTH = int(info.current_w * 0.8)
-SCREEN_HEIGHT = int(info.current_h * 0.8)
-# After getting SCREEN_WIDTH and SCREEN_HEIGHT
-REFERENCE_WIDTH = 1920
-REFERENCE_HEIGHT = 1080
-SCALE_X = SCREEN_WIDTH / REFERENCE_WIDTH
-SCALE_Y = SCREEN_HEIGHT / REFERENCE_HEIGHT
-SCALE_FACTOR = min(SCALE_X, SCALE_Y)  # Use smaller scale for consistency
-
-# Initialisation de l'écran avec une fenêtre de 80% de la taille de l'écran
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Mon Jeu avec Intro Vidéo")
-
-# Couleurs
-# Classe Joueur
 class Joueur:
     def __init__(self, image_path, position):
         # Base attributes
@@ -30,11 +16,14 @@ class Joueur:
         self.velocity_y = 0
         self.previous_y = position[1]
         self.rect = pygame.Rect(
-            position[0] + 30,  # Offset from left to center the hitbox
-            position[1] + 60,  # Slight offset from top to exclude character's head
-            100,  # Narrower width
-            200  # Slightly shorter height
+            position[0] + 30,
+            position[1] + 60,
+            100,
+            200
         )
+        # Add boundaries
+        self.left_boundary = pygame.Rect(-10, 0, 10, SCREEN_HEIGHT)
+        self.right_boundary = pygame.Rect(SCREEN_WIDTH - 10, 0, 10, SCREEN_HEIGHT)
 
         # Lives system
         self.max_lives = 3
@@ -51,15 +40,15 @@ class Joueur:
         self.load_animation_images()
 
         # Animation state tracking
-        self.current_state = "idle"  # Can be "idle", "running", "jumping"
+        self.current_state = "idle"
         self.image = self.idle_images[0] if self.idle_images else pygame.Surface((100, 200))
         self.facing_right = True
 
         # Animation timing
         self.idle_timer = 0
-        self.idle_threshold = 60  # 1 second at 60fps
+        self.idle_threshold = 60
         self.current_frame = 0
-        self.animation_speed = 8  # Change frame every 8 game ticks
+        self.animation_speed = 8
         self.animation_counter = 0
         self.is_idle = False
 
@@ -71,7 +60,8 @@ class Joueur:
 
         # Platform collision
         self.on_ground = False
-        self.floor_rect = pygame.Rect(0, SCREEN_HEIGHT - 90, SCREEN_WIDTH, 20)
+        floor_offset = int(270 * SCALE_FACTOR)
+        self.floor_rect = pygame.Rect(0, SCREEN_HEIGHT - floor_offset + 40, SCREEN_WIDTH, int(20 * SCALE_FACTOR))
         self.ignore_platforms = []
         self.platform_touching = None
 
@@ -89,7 +79,7 @@ class Joueur:
         self.normal_max_speed = 7 * SCALE_FACTOR
         self.sprint_acceleration = 1.0 * SCALE_FACTOR
         self.sprint_max_speed = 12 * SCALE_FACTOR
-        self.sprint_jump_bonus = 1.2 * SCALE_FACTOR
+        self.sprint_jump_bonus = 1.1 * SCALE_FACTOR
         self.direction = 0
         self.movement_time = 0
         self.sprint_threshold = 20
@@ -111,10 +101,8 @@ class Joueur:
     def load_animation_images(self):
         # Load idle images
         self.idle_images = self.load_image_set("Image/Idle/Idle", 5)
-
         # Load running images
         self.run_images = self.load_image_set("Image/Course/Course", 5)
-
         # Load jumping images
         self.jump_images = self.load_image_set("Image/Jump/Jump", 2)
 
@@ -123,10 +111,8 @@ class Joueur:
             fallback = pygame.Surface((100, 200))
             fallback.fill((255, 0, 0))
             self.idle_images = [fallback, fallback.copy()]
-
         if not self.run_images:
             self.run_images = self.idle_images.copy()
-
         if not self.jump_images:
             self.jump_images = self.idle_images.copy()
 
@@ -135,25 +121,19 @@ class Joueur:
         for i in range(1, count + 1):
             try:
                 img_path = f"{base_path}{i}.png"
-                # Print the path to help debug
-                print(f"Trying to load: {img_path}")
                 img = pygame.image.load(img_path)
                 img = pygame.transform.scale(img, (100, 200))
                 images.append(img)
             except pygame.error as e:
                 print(f"Could not load image {base_path}{i}.png: {e}")
                 continue
-
         if not images:
-            print(f"No images found for path: {base_path}")
             fallback = pygame.Surface((100, 200))
-            fallback.fill((255, 0, 0))  # Red fallback image
+            fallback.fill((255, 0, 0))
             images = [fallback]
-
         return images
 
     def update_player_image(self):
-        # Select the correct animation set based on state
         if self.current_state == "idle":
             current_images = self.idle_images
         elif self.current_state == "running":
@@ -161,14 +141,11 @@ class Joueur:
         else:  # jumping
             current_images = self.jump_images
 
-        # Ensure we don't go out of bounds
         if self.current_frame >= len(current_images):
             self.current_frame = 0
 
-        # Get the current frame from the appropriate animation set
         current_img = current_images[self.current_frame]
 
-        # Apply direction
         if self.facing_right:
             self.image = current_img
         else:
@@ -193,10 +170,7 @@ class Joueur:
         self.update_invincibility()
         keys = pygame.key.get_pressed()
 
-    # REMOVED: Don't create a new player here
-    # joueur = Joueur("Image/Idle/Idle1.png", ...)
-
-    # Update ghost positions for dash effect
+        # Update ghost positions for dash effect
         if self.dash_ghosts:
             self.dash_ghost_timer += 1
             if self.dash_ghost_timer >= self.dash_ghost_duration:
@@ -213,7 +187,7 @@ class Joueur:
         # Store previous position
         self.previous_y = self.rect.y
 
-        # Determine animation state based on movement
+        # Determine animation state
         if not self.on_ground:
             self.current_state = "jumping"
         elif abs(self.velocity_x) > 0.5:
@@ -238,7 +212,7 @@ class Joueur:
             )
             self.update_player_image()
 
-        # Update facing direction based on velocity
+        # Update facing direction
         if self.velocity_x > 0.5 and not self.facing_right:
             self.facing_right = True
         elif self.velocity_x < -0.5 and self.facing_right:
@@ -284,13 +258,13 @@ class Joueur:
                 # Maintain vertical velocity but reduce horizontal momentum
                 self.velocity_x *= 0.3
 
-        # Horizontal movement with acceleration
+        # Horizontal movement
         if keys[pygame.K_LEFT]:
             self.velocity_x -= self.acceleration
         elif keys[pygame.K_RIGHT]:
             self.velocity_x += self.acceleration
         else:
-            # Apply friction if no keys pressed
+            # Apply friction
             if self.velocity_x > 0:
                 self.velocity_x -= self.friction
             elif self.velocity_x < 0:
@@ -305,24 +279,19 @@ class Joueur:
         else:
             self.direction = 0
 
-        # Reset movement timer if direction changed or stopped
+        # Reset movement timer if direction changed
         if self.direction != old_direction:
             self.movement_time = 0
             self.velocity_x *= 0.5  # Slow down when changing direction
 
-        # Increment movement time if moving in a direction
+        # Handle sprinting
         if self.direction != 0:
             self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
-
-            # Calculate speed based on movement time
             sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
             current_max_speed = self.min_speed + (self.max_speed - self.min_speed) * sprint_factor
-            self.sprinting = sprint_factor > 0.8  # Consider sprinting at 80% speed
-
-            # Apply acceleration in current direction
+            self.sprinting = sprint_factor > 0.8
             self.velocity_x += self.direction * self.acceleration
         else:
-            # Apply friction when not pressing movement keys
             if self.velocity_x > 0:
                 self.velocity_x -= self.friction
             elif self.velocity_x < 0:
@@ -335,51 +304,39 @@ class Joueur:
             min(1.0, self.movement_time / self.sprint_threshold))
         self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
 
-        # Jumping with UP key
+        # Jumping
         if keys[pygame.K_UP] and self.on_ground:
             if not self.jump_charging:
-                # Start charging jump
                 self.jump_charging = True
                 self.jump_charge = 0
             elif self.jump_charging:
-                # Continue charging up to max
                 if self.jump_charge < self.max_jump_charge:
                     self.jump_charge += 2.0
         else:
-            # Release jump button - execute the jump if charging
             if self.jump_charging and self.on_ground:
-                # Calculate jump force based on horizontal speed
                 horizontal_speed = abs(self.velocity_x)
                 speed_bonus = horizontal_speed * self.speed_jump_bonus * 2.0
 
-                # Sprint bonus
                 if self.sprinting:
                     speed_bonus *= 1.5
 
-                # Charge bonus calculation
                 charge_factor = self.jump_charge / self.max_jump_charge
                 charge_bonus = charge_factor * self.charge_bonus * self.base_jump_force
 
-                # Apply final jump velocity with all bonuses
                 final_jump_force = self.base_jump_force - speed_bonus - charge_bonus
 
-                # Ensure minimum jump height even without charging
                 if final_jump_force > -15 * SCALE_FACTOR:
                     final_jump_force = -15 * SCALE_FACTOR
 
                 self.velocity_y = final_jump_force
-
-                # Give an immediate boost upward to clear platforms
                 self.rect.y -= 8
-
                 self.on_ground = False
                 self.platform_touching = None
 
-            # Reset charging state
             self.jump_charging = False
             self.jump_charge = 0
 
-        # Drop from platform with DOWN key
+        # Drop from platform
         if keys[
             pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
             self.ignore_platforms.append(self.platform_touching)
@@ -392,28 +349,37 @@ class Joueur:
         self.rect.x += self.velocity_x
         self.rect.y += self.velocity_y
 
-        # Platform collision handling
+        # Check boundary collisions
+        if self.rect.colliderect(self.left_boundary):
+            self.rect.left = 0
+            self.velocity_x = 0
+
+        if self.rect.colliderect(self.right_boundary):
+            self.rect.right = SCREEN_WIDTH
+            self.velocity_x = 0
+
+        if self.rect.top < 0:
+            self.rect.top = 0
+            self.velocity_y = 0
+
+        # Platform collision
         self.on_ground = False
         self.platform_touching = None
 
         for platform in platforms:
-            # Skip ignored platforms
             if platform in self.ignore_platforms:
                 continue
 
             if self.rect.colliderect(platform):
-                # Movement direction (up or down)
                 moving_down = self.velocity_y > 0
-
                 if moving_down and self.previous_y + self.rect.height <= platform.top:
-                    # Collision from top of platform
                     self.rect.bottom = platform.top
                     self.on_ground = True
                     self.velocity_y = 0
                     self.platform_touching = platform
 
-        # Clean up ignored platforms list
-        if self.velocity_y >= 0:  # Player is falling or on ground
+        # Clean up ignored platforms
+        if self.velocity_y >= 0:
             self.ignore_platforms = []
 
         # Handle floor collision
@@ -424,56 +390,31 @@ class Joueur:
             self.platform_touching = self.floor_rect
 
 
+# Fonction principale du jeuit
+def main_game(existing_screen=None):
+    global screen
 
-# Fonction pour générer une nouvelle hauteur
-def nouvelle_hauteur(ancienne_hauteur, y_min, y_max):
-    while True:
-        nouvelle = random.randint(y_min, y_max)
-        if abs(nouvelle - ancienne_hauteur) > 50:
-            return nouvelle
+    # Use existing screen if provided, otherwise create a new one
+    if existing_screen:
+        screen = existing_screen
+        SCREEN_WIDTH = screen.get_width()
+        SCREEN_HEIGHT = screen.get_height()
+    else:
+        # Initialize pygame if not already done
+        if not pygame.get_init():
+            pygame.init()
 
-def creer_balle(x0, y0, angle_min=10, angle_max=50):
-    # Higher velocity ranges for more challenging gameplay
-    vitesse_min, vitesse_max = 5, 20  # Increased from 5, 25
-    v0 = random.uniform(vitesse_min, vitesse_max)
-    angle = random.uniform(angle_min, angle_max)
-    angle_rad = np.radians(angle)
+        # Get screen dimensions
+        info = pygame.display.Info()
+        SCREEN_WIDTH = int(info.current_w * 0.8)
+        SCREEN_HEIGHT = int(info.current_h * 0.8)
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    # Calculate banana velocities
-    vx = v0 * np.cos(angle_rad)  # Horizontal velocity
-    vy = -v0 * np.sin(angle_rad)  # Vertical velocity
 
-    return {"pos": [x0, y0], "vel": [vx, vy], "start_time": pygame.time.get_ticks(), "rotation": 0}
 
-# Fonction pour le lanceur gauche
-def lancer_gauche(balles, max_bananes, lanceur_gauche_rect):
-    if len(balles) < max_bananes:
-        balle = creer_balle(lanceur_gauche_rect.centerx, lanceur_gauche_rect.bottom)
-        balle["vel"][0] = abs(balle["vel"][0])  # Faire en sorte que la balle parte vers la droite
-        balles.append(balle)
-
-# Fonction pour le lanceur droit
-def lancer_droit(balles, max_bananes, lanceur_droite_rect):
-    if len(balles) < max_bananes:
-        balle = creer_balle(lanceur_droite_rect.centerx, lanceur_droite_rect.bottom)
-        balle["vel"][0] = -abs(balle["vel"][0])  # Faire en sorte que la balle parte vers la gauche
-        balles.append(balle)
-
-def game_over():
-            font_size = int(74 * SCALE_FACTOR)
-            font = pygame.font.Font(None, font_size)
-            text = font.render("Game Over", True, (255, 0, 0))
-            screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2))
-            pygame.display.flip()
-            pygame.time.wait(2000)
-# Fonction principale du jeu
-def main_game():
-    # Définir les limites de vitesse pour les balles
-    vitesse_min, vitesse_max = 15, 35
-    # Add near the beginning of main_game()
+    # Fix player spawn position to be relative to screen height
     joueur = Joueur("Image/Idle/Idle1.png",
-                    (SCREEN_WIDTH // 2 - 65, SCREEN_HEIGHT - 400 - 150))
-
+                    (SCREEN_WIDTH // 2 - 65, SCREEN_HEIGHT - 300))
     heart_img = pygame.image.load("Image/heart.png")
     heart_img = pygame.transform.scale(heart_img, (int(30 * SCALE_FACTOR), int(30 * SCALE_FACTOR)))
 
@@ -664,13 +605,22 @@ def main_game():
                 joueur.take_damage()
                 balles.remove(balle)
                 if joueur.lives <= 0:
-                    game_over()
-                    run = False
+                    action = game_over(screen)
+                    if action == "rematch":
+                        # Reset the game
+                        joueur.lives = joueur.max_lives
+                        joueur.invincible = False
+                        balles = []
+                        joueur.rect.x = SCREEN_WIDTH // 2 - 65
+                        joueur.rect.y = SCREEN_HEIGHT - 300
+                    else:  # "quit"
+                        run = False
 
         # Draw collision boxes (for debugging)
         pygame.draw.rect(screen, (255, 0, 0), platformeH_rect, 2)
         pygame.draw.rect(screen, (255, 0, 0), platform2_rect, 2)
         pygame.draw.rect(screen, (255, 0, 0), platform3_rect, 2)
+        pygame.draw.rect(screen, (0, 255, 0), joueur.floor_rect, 3)  # Green line showing floor position
 
         # Afficher les boîtes de collision des lanceurs
         pygame.draw.rect(screen, (0, 0, 255), lanceur_gauche_rect, 2)  # Bleu
@@ -721,5 +671,4 @@ def main_game():
 # Lancer le jeu sans introduction
 if __name__ == "__main__":
     main_game()
-
     pygame.quit()
