@@ -12,39 +12,39 @@ def draw_hearts(screen, lives, heart_img):
 
 
 def game_over(screen):
-    # Get current screen dimensions
+    # Obtenir les dimensions actuelles de l'écran
     screen_width = screen.get_width()
     screen_height = screen.get_height()
 
-    # Create semi-transparent overlay
+    # Créer une superposition semi-transparente
     overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 128))  # Black with 50% transparency
     screen.blit(overlay, (0, 0))
 
-    # Scale font size based on screen
+    # Adapter la taille de la police à l'écran
     font_size = int(74 * SCALE_FACTOR)
     font = pygame.font.Font(None, font_size)
 
-    # Render text
+    # Générer le texte
     text = font.render("Game Over", True, (255, 0, 0))
 
-    # Center the text on screen
+    # Centrer le texte à l'écran
     text_x = screen_width // 2 - text.get_width() // 2
     text_y = screen_height // 2 - text.get_height() // 2 - int(50 * SCALE_FACTOR)
 
-    # Draw centered text
+    # Dessiner le texte centré
     screen.blit(text, (text_x, text_y))
 
-    # Create buttons
+    # Créer les boutons
     button_width = int(200 * SCALE_FACTOR)
     button_height = int(50 * SCALE_FACTOR)
     button_spacing = int(30 * SCALE_FACTOR)
 
-    # Button font
+    # Police des boutons
     button_font_size = int(36 * SCALE_FACTOR)
     button_font = pygame.font.Font(None, button_font_size)
 
-    # Rematch button
+    # Bouton rejouer
     rematch_button = pygame.Rect(
         screen_width // 2 - button_width - button_spacing // 2,
         text_y + text.get_height() + int(50 * SCALE_FACTOR),
@@ -55,7 +55,7 @@ def game_over(screen):
     rematch_text_x = rematch_button.centerx - rematch_text.get_width() // 2
     rematch_text_y = rematch_button.centery - rematch_text.get_height() // 2
 
-    # Quit button
+    # Bouton quitter
     quit_button = pygame.Rect(
         screen_width // 2 + button_spacing // 2,
         text_y + text.get_height() + int(50 * SCALE_FACTOR),
@@ -66,21 +66,21 @@ def game_over(screen):
     quit_text_x = quit_button.centerx - quit_text.get_width() // 2
     quit_text_y = quit_button.centery - quit_text.get_height() // 2
 
-    # Draw buttons
+    # Dessiner les boutons
     pygame.draw.rect(screen, (50, 120, 200), rematch_button, border_radius=10)
     pygame.draw.rect(screen, (200, 50, 50), quit_button, border_radius=10)
 
-    # Draw button borders
+    # Dessiner les bordures des boutons
     pygame.draw.rect(screen, (255, 255, 255), rematch_button, width=2, border_radius=10)
     pygame.draw.rect(screen, (255, 255, 255), quit_button, width=2, border_radius=10)
 
-    # Draw button text
+    # Dessiner le texte des boutons
     screen.blit(rematch_text, (rematch_text_x, rematch_text_y))
     screen.blit(quit_text, (quit_text_x, quit_text_y))
 
     pygame.display.flip()
 
-    # Wait for button click
+    # Attendre un clic sur un bouton
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -97,7 +97,7 @@ def game_over(screen):
                 if event.key == pygame.K_RETURN:
                     return "rematch"
 
-        # Hover effects
+        # Effets de survol
         mouse_pos = pygame.mouse.get_pos()
         if rematch_button.collidepoint(mouse_pos):
             pygame.draw.rect(screen, (80, 150, 230), rematch_button, border_radius=10)

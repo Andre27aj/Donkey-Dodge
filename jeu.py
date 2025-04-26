@@ -390,21 +390,21 @@ class Joueur:
             self.platform_touching = self.floor_rect
 
 
-# Fonction principale du jeuit
+# Fonction principale du jeui
 def main_game(existing_screen=None):
     global screen
 
-    # Use existing screen if provided, otherwise create a new one
+    #Utilisation de l'écran existant,sinon en créer un nouveau
     if existing_screen:
         screen = existing_screen
         SCREEN_WIDTH = screen.get_width()
         SCREEN_HEIGHT = screen.get_height()
     else:
-        # Initialize pygame if not already done
+        # Initialiser pygame si ce n'est pas déjà fait
         if not pygame.get_init():
             pygame.init()
 
-        # Get screen dimensions
+        # Obtenir la taille de l'écran
         info = pygame.display.Info()
         SCREEN_WIDTH = int(info.current_w * 0.8)
         SCREEN_HEIGHT = int(info.current_h * 0.8)
@@ -412,7 +412,7 @@ def main_game(existing_screen=None):
 
 
 
-    # Fix player spawn position to be relative to screen height
+    # Corriger la position d’apparition du joueur pour qu’elle soit relative à la hauteur de l’écran
     joueur = Joueur("Image/Idle/Idle1.png",
                     (SCREEN_WIDTH // 2 - 65, SCREEN_HEIGHT - 300))
     heart_img = pygame.image.load("Image/heart.png")
@@ -440,7 +440,7 @@ def main_game(existing_screen=None):
 
     platformeH_display = platformeH.get_rect(topleft=(
         SCREEN_WIDTH // 2 - 170,
-        SCREEN_HEIGHT // 2 - 50 + (50 * SCALE_FACTOR)  # Adjust based on scale
+        SCREEN_HEIGHT // 2 - 50 + (50 * SCALE_FACTOR)  #Position ajustée
     ))
     platform2_display = platform2.get_rect(topleft=(
         int(SCREEN_WIDTH * 0.75) - 150,
@@ -489,7 +489,7 @@ def main_game(existing_screen=None):
     clock = pygame.time.Clock()
     run = True
     max_bananes = 4
-    firing_cooldown = 500  # Milliseconds between shots
+    firing_cooldown = 500  # millisecondes entre chaque tir
     last_left_fire_time = 0
     last_right_fire_time = 0
     # Limite de bananes à l'écran
@@ -515,11 +515,11 @@ def main_game(existing_screen=None):
         current_time = pygame.time.get_ticks()
         if keys[pygame.K_a]:
             if current_time - last_left_fire_time >= firing_cooldown:
-                # Fire multiple bananas at once
-                num_bananas = 3  # Number of bananas to fire at once
+                # tire de plusieurs bananes en même temps
+                num_bananas = 3  # nombre de bananes à tirer en même temps
                 for _ in range(num_bananas):
                     if len(balles) < max_bananes:
-                        # Add slight variation to each banana
+                        # variation légère pour chaque banane
                         angle_variation = random.uniform(-10, 10)
                         speed_variation = random.uniform(0.9, 1.1)
                         balle = creer_balle(
@@ -528,18 +528,18 @@ def main_game(existing_screen=None):
                             angle_min + angle_variation,
                             angle_max + angle_variation
                         )
-                        balle["vel"][0] = abs(balle["vel"][0]) * speed_variation  # Make sure banana goes right
+                        balle["vel"][0] = abs(balle["vel"][0]) * speed_variation  #verifie que la banane va à droite
                         balles.append(balle)
                 last_left_fire_time = current_time
 
-        # For right launcher
+        # pour le lanceur droit
         if keys[pygame.K_d]:
             if current_time - last_right_fire_time >= firing_cooldown:
-                # Fire multiple bananas at once
-                num_bananas = 3  # Number of bananas to fire at once
+                #tire de plusieurs bananes en même temps
+                num_bananas = 3  # nombre de bananes à tirer en même temps
                 for _ in range(num_bananas):
                     if len(balles) < max_bananes:
-                        # Add slight variation to each banana
+                        # variation légère pour chaque banane
                         angle_variation = random.uniform(-10, 10)
                         speed_variation = random.uniform(0.9, 1.1)
                         balle = creer_balle(
@@ -548,7 +548,7 @@ def main_game(existing_screen=None):
                             angle_min + angle_variation,
                             angle_max + angle_variation
                         )
-                        balle["vel"][0] = -abs(balle["vel"][0]) * speed_variation  # Make sure banana goes left
+                        balle["vel"][0] = -abs(balle["vel"][0]) * speed_variation  # verifie que la banane va à gauche
                         balles.append(balle)
                 last_right_fire_time = current_time
 
@@ -593,7 +593,7 @@ def main_game(existing_screen=None):
             rotated_balle = pygame.transform.rotate(balle_img, balle["rotation"])
             new_rect = rotated_balle.get_rect(center=(int(balle["pos"][0]), int(balle["pos"][1])))
             screen.blit(rotated_balle, new_rect.topleft)
-            # Check collision with player
+            # verifier si la balle entre en collision avec le joueur
         for balle in balles[:]:
             balle_rect = pygame.Rect(
                 balle["pos"][0] - 40 * SCALE_FACTOR,
@@ -607,7 +607,7 @@ def main_game(existing_screen=None):
                 if joueur.lives <= 0:
                     action = game_over(screen)
                     if action == "rematch":
-                        # Reset the game
+                        # recommencer le jeu
                         joueur.lives = joueur.max_lives
                         joueur.invincible = False
                         balles = []
@@ -616,41 +616,42 @@ def main_game(existing_screen=None):
                     else:  # "quit"
                         run = False
 
-        # Draw collision boxes (for debugging)
-        pygame.draw.rect(screen, (255, 0, 0), platformeH_rect, 2)
-        pygame.draw.rect(screen, (255, 0, 0), platform2_rect, 2)
-        pygame.draw.rect(screen, (255, 0, 0), platform3_rect, 2)
-        pygame.draw.rect(screen, (0, 255, 0), joueur.floor_rect, 3)  # Green line showing floor position
-
-        # Afficher les boîtes de collision des lanceurs
-        pygame.draw.rect(screen, (0, 0, 255), lanceur_gauche_rect, 2)  # Bleu
-        pygame.draw.rect(screen, (0, 0, 255), lanceur_droite_rect, 2)  # Bleu
-
-        # Afficher le joueur après tous les autres éléments
+        # # Afficher boites de collision
+        # pygame.draw.rect(screen, (255, 0, 0), platformeH_rect, 2)
+        # pygame.draw.rect(screen, (255, 0, 0), platform2_rect, 2)
+        # pygame.draw.rect(screen, (255, 0, 0), platform3_rect, 2)
+        # pygame.draw.rect(screen, (0, 255, 0), joueur.floor_rect, 3)  # Green line showing floor position
+        #
+        # # Afficher les boîtes de collision des lanceurs
+        # pygame.draw.rect(screen, (0, 0, 255), lanceur_gauche_rect, 2)  # Bleu
+        # pygame.draw.rect(screen, (0, 0, 255), lanceur_droite_rect, 2)  # Bleu
+        #
+        # # Afficher le joueur après tous les autres éléments
         screen.blit(joueur.image, joueur.rect.topleft)
-        pygame.draw.rect(screen, (0, 255, 0), joueur.rect, 2)  # Boîte de collision du joueur
-        # Display scaled hearts
+        # pygame.draw.rect(screen, (0, 255, 0), joueur.rect, 2)  # Boîte de collision du joueur
+
+        # Affiche les coeurs mis a lechelle
         heart_margin = int(20 * SCALE_FACTOR)
         heart_size = int(30 * SCALE_FACTOR)
         heart_spacing = int(10 * SCALE_FACTOR)
         for i in range(joueur.lives):
             screen.blit(heart_img, (heart_margin + i * (heart_size + heart_spacing), heart_margin))
         if joueur.invincible:
-            if joueur.invincibility_timer % 6 < 3:  # Flash effect
+            if joueur.invincibility_timer % 6 < 3:  # effet clignotant
                 screen.blit(joueur.image, joueur.rect.topleft)
-        # Draw dash ghost trail if it exists
+        # afficahege du joueur qui dash
         if joueur.dash_ghosts:
-            # Calculate alpha based on remaining time
+            # Calcule alpha en fonction du temps restant
             alpha_factor = 1 - (joueur.dash_ghost_timer / joueur.dash_ghost_duration)
 
             for i, ghost_pos in enumerate(joueur.dash_ghosts):
-                # Make ghosts progressively more transparent
+                # rendre le dash transparent
                 ghost_alpha = int(200 * alpha_factor * (1 - i / len(joueur.dash_ghosts)))
                 ghost_img = joueur.image.copy()
                 ghost_img.set_alpha(ghost_alpha)
                 screen.blit(ghost_img, ghost_pos)
 
-        # Show dash cooldown indicator
+        # cooldown du dash
         if not joueur.dash_available:
             cooldown_width = int(50 * SCALE_FACTOR)
             cooldown_height = int(10 * SCALE_FACTOR)
