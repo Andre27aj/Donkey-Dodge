@@ -431,26 +431,26 @@ def main_game(existing_screen=None):
     platform3 = pygame.transform.scale(platform, (300*SCALE_FACTOR, 300*SCALE_FACTOR))
 
     platformeH_display = platformeH.get_rect(topleft=(
-        SCREEN_WIDTH // 2 - 170,
-        SCREEN_HEIGHT // 2 - 50 + (50 * SCALE_FACTOR)  #Position ajustée
+        SCREEN_WIDTH // 2 - int(170*SCALE_FACTOR),
+        SCREEN_HEIGHT // 2 - int(50*SCALE_FACTOR) + (50 * SCALE_FACTOR)  #Position ajustée
     ))
     platform2_display = platform2.get_rect(topleft=(
-        int(SCREEN_WIDTH * 0.75) - 150,
-        int(SCREEN_HEIGHT * 0.65) - (20 * SCALE_FACTOR)
+        int(SCREEN_WIDTH * 0.75) - int(150*SCALE_FACTOR),
+        int(SCREEN_HEIGHT * 0.65) - int(20 * SCALE_FACTOR)
     ))
     platform3_display = platform3.get_rect(topleft=(
-        int(SCREEN_WIDTH * 0.25) - 150,
-        int(SCREEN_HEIGHT * 0.65) - (20 * SCALE_FACTOR)
+        int(SCREEN_WIDTH * 0.25) - int(150*SCALE_FACTOR),
+        int(SCREEN_HEIGHT * 0.65) - int(20 * SCALE_FACTOR)
     ))
     # Créer des boîtes de collision décalées vers le bas
-    offset_y = 27  # Décalage pour la boîte de collision
-    platformeH_rect = pygame.Rect(platformeH_display.x*SCALE_FACTOR, (platformeH_display.y + offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
-    platform2_rect = pygame.Rect(platform2_display.x*SCALE_FACTOR, (platform2_display.y + offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
-    platform3_rect = pygame.Rect(platform3_display.x*SCALE_FACTOR, (platform3_display.y + offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    offset_y = 27*SCALE_FACTOR  # Décalage pour la boîte de collision
+    platformeH_rect = pygame.Rect(platformeH_display.x, (platformeH_display.y + int(offset_y*SCALE_FACTOR)), 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platform2_rect = pygame.Rect(platform2_display.x, platform2_display.y + (offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platform3_rect = pygame.Rect(platform3_display.x, platform3_display.y + (offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
 
     # Positions des lanceurs (ajustés pour ne pas être au milieu de l'image)
-    x_gauche = -30*SCALE_FACTOR  # Lanceur gauche plus proche du bord
-    x_droite = (SCREEN_WIDTH - 200 + 30)*SCALE_FACTOR  # Lanceur droit plus proche du bord
+    x_gauche = -int(30*SCALE_FACTOR)  # Lanceur gauche plus proche du bord
+    x_droite = SCREEN_WIDTH - int(170*SCALE_FACTOR)  # Lanceur droit plus proche du bord
     y_lanceur_gauche = 0  # Position du lanceur gauche ajustée
     y_lanceur_droite = 0  # Position du lanceur droit ajustée
 
@@ -476,7 +476,7 @@ def main_game(existing_screen=None):
 
     # Création du joueur
     # Ajout de la variable pour la vitesse de déplacement des lanceurs
-    lanceur_speed = 10
+    lanceur_speed = 10*SCALE_FACTOR
 
     clock = pygame.time.Clock()
     run = True

@@ -9,8 +9,8 @@ class Platform:
         self.display_rect = self.image.get_rect(topleft=(x, y))
 
         # Créer un rectangle de collision (plus petit que le rectangle d'affichage)
-        offset_y = 27
-        self.rect = pygame.Rect(x, y + offset_y, width, 20)
+        offset_y = 27*SCALE_FACTOR
+        self.rect = pygame.Rect(x, y + offset_y, width, int(20*SCALE_FACTOR))
 
     def draw(self, screen):
         screen.blit(self.image, self.display_rect)
