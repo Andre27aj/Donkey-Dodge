@@ -5,8 +5,6 @@ from lanceur import *
 from fonc import *
 from lanceur import *
 
-from PIL.ImageChops import offset
-
 pygame.init()
 
 class Joueur:
@@ -305,8 +303,8 @@ class Joueur:
         self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
 
         # Jumping
-        if keys[pygame.K_UP] and self.on_ground:
-            if not self.jump_charging:
+        if keys[pygame.K_UP]:
+            if self.on_ground and not self.jump_charging:
                 self.jump_charging = True
                 self.jump_charge = 0
             elif self.jump_charging:
@@ -314,27 +312,21 @@ class Joueur:
                     self.jump_charge += 2.0
         else:
             if self.jump_charging and self.on_ground:
+                # Calcul de la force de saut
                 horizontal_speed = abs(self.velocity_x)
-                speed_bonus = horizontal_speed * self.speed_jump_bonus * 2.0
-
-                if self.sprinting:
-                    speed_bonus *= 1.5
-
+                speed_bonus = horizontal_speed * self.speed_jump_bonus
                 charge_factor = self.jump_charge / self.max_jump_charge
-                charge_bonus = charge_factor * self.charge_bonus * self.base_jump_force
+                charge_bonus = charge_factor * self.charge_bonus
+                self.velocity_y = self.base_jump_force - speed_bonus - charge_bonus
 
-                final_jump_force = self.base_jump_force - speed_bonus - charge_bonus
+                # Empêche un saut trop faible
+                if self.velocity_y > -15 * SCALE_FACTOR:
+                    self.velocity_y = -15 * SCALE_FACTOR
 
-                if final_jump_force > -15 * SCALE_FACTOR:
-                    final_jump_force = -15 * SCALE_FACTOR
-
-                self.velocity_y = final_jump_force
-                self.rect.y -= 8
                 self.on_ground = False
-                self.platform_touching = None
+                self.jump_charging = False
+                self.jump_charge = 0
 
-            self.jump_charging = False
-            self.jump_charge = 0
 
         # Drop from platform
         if keys[
