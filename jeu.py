@@ -14,10 +14,10 @@ class Joueur:
         self.velocity_y = 0
         self.previous_y = position[1]
         self.rect = pygame.Rect(
-            position[0] + 30,
-            position[1] + 60,
-            100,
-            200
+            position[0] + int(30*SCALE_FACTOR),
+            position[1] + int(60*SCALE_FACTOR),
+            100*SCALE_FACTOR,
+            200*SCALE_FACTOR
         )
         # Add boundaries
         self.left_boundary = pygame.Rect(-10, 0, 10, SCREEN_HEIGHT)
@@ -120,13 +120,13 @@ class Joueur:
             try:
                 img_path = f"{base_path}{i}.png"
                 img = pygame.image.load(img_path)
-                img = pygame.transform.scale(img, (100, 200))
+                img = pygame.transform.scale(img, (100*SCALE_FACTOR, 200*SCALE_FACTOR))
                 images.append(img)
             except pygame.error as e:
                 print(f"Could not load image {base_path}{i}.png: {e}")
                 continue
         if not images:
-            fallback = pygame.Surface((100, 200))
+            fallback = pygame.Surface((100*SCALE_FACTOR, 200*SCALE_FACTOR))
             fallback.fill((255, 0, 0))
             images = [fallback]
         return images
@@ -414,21 +414,21 @@ def main_game(existing_screen=None):
     back = pygame.image.load("Image/Back.png")
     back = pygame.transform.scale(back, (SCREEN_WIDTH, SCREEN_HEIGHT))
     balle_img = pygame.image.load("Image/balle.png")
-    balle_img = pygame.transform.scale(balle_img, (80, 80))
+    balle_img = pygame.transform.scale(balle_img, (80*SCALE_FACTOR, 80*SCALE_FACTOR))
 
     lanceur_img = pygame.image.load("Image/lanceur.png")  # Changer l'image du lanceur
-    lanceur_img = pygame.transform.scale(lanceur_img, (200, 200))
+    lanceur_img = pygame.transform.scale(lanceur_img, (200*SCALE_FACTOR, 200*SCALE_FACTOR))
 
     # Retourner le lanceur de gauche
     lanceur_gauche_img = pygame.transform.flip(lanceur_img, True, False)
     lanceur_droite_img = lanceur_img
 
     platform = pygame.image.load("Image/Plateforme.png")
-    platform = pygame.transform.scale(platform, (150, 150))
+    platform = pygame.transform.scale(platform, (150*SCALE_FACTOR, 150*SCALE_FACTOR))
 
-    platformeH = pygame.transform.scale(platform, (300, 300))
-    platform2 = pygame.transform.scale(platform, (300, 300))
-    platform3 = pygame.transform.scale(platform, (300, 300))
+    platformeH = pygame.transform.scale(platform, (300*SCALE_FACTOR, 300*SCALE_FACTOR))
+    platform2 = pygame.transform.scale(platform, (300*SCALE_FACTOR, 300*SCALE_FACTOR))
+    platform3 = pygame.transform.scale(platform, (300*SCALE_FACTOR, 300*SCALE_FACTOR))
 
     platformeH_display = platformeH.get_rect(topleft=(
         SCREEN_WIDTH // 2 - 170,
@@ -444,19 +444,19 @@ def main_game(existing_screen=None):
     ))
     # Créer des boîtes de collision décalées vers le bas
     offset_y = 27  # Décalage pour la boîte de collision
-    platformeH_rect = pygame.Rect(platformeH_display.x, platformeH_display.y + offset_y, 300, 20)
-    platform2_rect = pygame.Rect(platform2_display.x, platform2_display.y + offset_y, 300, 20)
-    platform3_rect = pygame.Rect(platform3_display.x, platform3_display.y + offset_y, 300, 20)
+    platformeH_rect = pygame.Rect(platformeH_display.x*SCALE_FACTOR, (platformeH_display.y + offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platform2_rect = pygame.Rect(platform2_display.x*SCALE_FACTOR, (platform2_display.y + offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platform3_rect = pygame.Rect(platform3_display.x*SCALE_FACTOR, (platform3_display.y + offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
 
     # Positions des lanceurs (ajustés pour ne pas être au milieu de l'image)
-    x_gauche = -30  # Lanceur gauche plus proche du bord
-    x_droite = SCREEN_WIDTH - 200 + 30  # Lanceur droit plus proche du bord
+    x_gauche = -30*SCALE_FACTOR  # Lanceur gauche plus proche du bord
+    x_droite = (SCREEN_WIDTH - 200 + 30)*SCALE_FACTOR  # Lanceur droit plus proche du bord
     y_lanceur_gauche = 0  # Position du lanceur gauche ajustée
     y_lanceur_droite = 0  # Position du lanceur droit ajustée
 
     # Création des rectangles pour les lanceurs (déplacé ici)
-    lanceur_gauche_rect = pygame.Rect(x_gauche, y_lanceur_gauche, 200, 200)
-    lanceur_droite_rect = pygame.Rect(x_droite, y_lanceur_droite, 200, 200)
+    lanceur_gauche_rect = pygame.Rect(x_gauche, y_lanceur_gauche, 200*SCALE_FACTOR, 200*SCALE_FACTOR)
+    lanceur_droite_rect = pygame.Rect(x_droite, y_lanceur_droite, 200*SCALE_FACTOR, 200*SCALE_FACTOR)
 
     # Interpolation fluide
     interpolation_factor = 0.05
