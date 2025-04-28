@@ -431,7 +431,7 @@ def main_game(existing_screen=None):
 
     platformeH_display = platformeH.get_rect(topleft=(
         SCREEN_WIDTH // 2 - int(170*SCALE_FACTOR),
-        SCREEN_HEIGHT // 2 - int(50*SCALE_FACTOR) + (50 * SCALE_FACTOR)  #Position ajustée
+        SCREEN_HEIGHT // 2 - int(50*SCALE_FACTOR)  #Position ajustée
     ))
     platform2_display = platform2.get_rect(topleft=(
         int(SCREEN_WIDTH * 0.75) - int(150*SCALE_FACTOR),
@@ -443,9 +443,9 @@ def main_game(existing_screen=None):
     ))
     # Créer des boîtes de collision décalées vers le bas
     offset_y = 27*SCALE_FACTOR  # Décalage pour la boîte de collision
-    platformeH_rect = pygame.Rect(platformeH_display.x, (platformeH_display.y + int(offset_y*SCALE_FACTOR)), 300*SCALE_FACTOR, 20*SCALE_FACTOR)
-    platform2_rect = pygame.Rect(platform2_display.x, platform2_display.y + (offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
-    platform3_rect = pygame.Rect(platform3_display.x, platform3_display.y + (offset_y)*SCALE_FACTOR, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platformeH_rect = pygame.Rect(platformeH_display.x, platformeH_display.y + offset_y, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platform2_rect = pygame.Rect(platform2_display.x, platform2_display.y + offset_y, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
+    platform3_rect = pygame.Rect(platform3_display.x, platform3_display.y + offset_y, 300*SCALE_FACTOR, 20*SCALE_FACTOR)
 
     # Positions des lanceurs (ajustés pour ne pas être au milieu de l'image)
     x_gauche = -int(30*SCALE_FACTOR)  # Lanceur gauche plus proche du bord
@@ -466,7 +466,7 @@ def main_game(existing_screen=None):
 
     angle_min, angle_max = 10, 50
 
-    g = 9.81
+    g = 9.81 *SCALE_FACTOR
     dt = 0.05
 
     balles = []
