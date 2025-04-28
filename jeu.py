@@ -1,5 +1,4 @@
 import pygame
-import random
 from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
 from lanceur import *
 from fonc import *
