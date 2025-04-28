@@ -9,10 +9,10 @@ class joueur:
         self.velocity_y = 0
         self.previous_y = position[1]
         self.rect = pygame.Rect(
-            position[0] + 30,
-            position[1] + 60,
-            100,
-            200
+            position[0] + int(30*SCALE_FACTOR),
+            position[1] + int(60*SCALE_FACTOR),
+            100*SCALE_FACTOR,
+            200*SCALE_FACTOR
         )
         # Ajouter les limites
         self.left_boundary = pygame.Rect(-10, 0, 10, SCREEN_HEIGHT)
@@ -115,7 +115,7 @@ class joueur:
             try:
                 img_path = f"{base_path}{i}.png"
                 img = pygame.image.load(img_path)
-                img = pygame.transform.scale(img, (100, 200))
+                img = pygame.transform.scale(img, (100*SCALE_FACTOR, 200*SCALE_FACTOR))
                 images.append(img)
             except pygame.error as e:
                 print(f"Could not load image {base_path}{i}.png: {e}")

@@ -12,7 +12,7 @@ class Launcher:
 
         # Charger l'image
         self.orig_image = pygame.image.load("Image/lanceur.png")
-        self.orig_image = pygame.transform.scale(self.orig_image, (200, 200))
+        self.orig_image = pygame.transform.scale(self.orig_image, (200*SCALE_FACTOR, 200*SCALE_FACTOR))
 
         # Retourner l'image si c'est le lanceur gauche
         if is_left:
