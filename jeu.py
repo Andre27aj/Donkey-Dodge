@@ -479,7 +479,7 @@ def main_game(existing_screen=None):
 
     clock = pygame.time.Clock()
     run = True
-    max_bananes = 4
+    max_bananes = 2
     firing_cooldown = 500  # millisecondes entre chaque tir
     last_left_fire_time = 0
     last_right_fire_time = 0
@@ -507,7 +507,7 @@ def main_game(existing_screen=None):
         if keys[pygame.K_a]:
             if current_time - last_left_fire_time >= firing_cooldown:
                 # tire de plusieurs bananes en même temps
-                num_bananas = 3  # nombre de bananes à tirer en même temps
+                num_bananas = 2  # nombre de bananes à tirer en même temps
                 for _ in range(num_bananas):
                     if len(balles) < max_bananes:
                         # variation légère pour chaque banane
@@ -527,12 +527,12 @@ def main_game(existing_screen=None):
         if keys[pygame.K_d]:
             if current_time - last_right_fire_time >= firing_cooldown:
                 #tire de plusieurs bananes en même temps
-                num_bananas = 3  # nombre de bananes à tirer en même temps
+                num_bananas = 2  # nombre de bananes à tirer en même temps
                 for _ in range(num_bananas):
                     if len(balles) < max_bananes:
                         # variation légère pour chaque banane
                         angle_variation = random.uniform(-10, 10)
-                        speed_variation = random.uniform(0.9, 1.1)
+                        speed_variation = random.uniform(0.5, 1.5)
                         balle = creer_balle(
                             lanceur_droite_rect.centerx,
                             lanceur_droite_rect.bottom,
