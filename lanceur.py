@@ -1,18 +1,22 @@
 import pygame
-import random
-import numpy as np
-from constante import SCREEN_WIDTH,SCALE_FACTOR,GRAVITY,DT
-
+from constante import SCALE_FACTOR
 
 class Launcher:
-    def __init__(self, x, y, is_left=True):
-        self.rect = pygame.Rect(x, y, 200, 200)
+    def __init__(self, x, y, is_left=True, scale_factor=SCALE_FACTOR):
+        # Position et taille
+        self.x = x
+        self.y = y
+        self.scale_factor = scale_factor
         self.is_left = is_left
-        self.last_fire_time = 0
+        self.width = int(200 * scale_factor)
+        self.height = int(200 * scale_factor)
 
-        # Charger l'image
+        # Rectangle pour les collisions
+        self.rect = pygame.Rect(x, y, self.width, self.height)
+
+        # Chargement et mise à l'échelle de l'image
         self.orig_image = pygame.image.load("Image/lanceur.png")
-        self.orig_image = pygame.transform.scale(self.orig_image, (200*SCALE_FACTOR, 200*SCALE_FACTOR))
+        self.orig_image = pygame.transform.scale(self.orig_image, (self.width, self.height))
 
         # Retourner l'image si c'est le lanceur gauche
         if is_left:
@@ -20,31 +24,34 @@ class Launcher:
         else:
             self.image = self.orig_image
 
-# Créer une balle avec une vitesse et un angle aléatoires
-def creer_balle(x0, y0, angle_min=10, angle_max=50):
-    vitesse_min, vitesse_max = 5, 20
-    v0 = random.uniform(vitesse_min, vitesse_max)
-    angle = random.uniform(angle_min, angle_max)
-    angle_rad = np.radians(angle)
+        # Interpolation fluide
+        self.target_y = y
+        self.interpolation_factor = 0.05
+        self.speed = 10 * scale_factor
+        self.last_fire_time = 0
 
-    # Calculer les vitesses
-    vx = v0 * np.cos(angle_rad)
-    vy = -v0 * np.sin(angle_rad)
+    def move_up(self):
+        self.y -= self.speed
+        self.rect.y = self.y
 
-    return {
-        "pos": [x0, y0],
-        "vel": [vx, vy],
-        "start_time": pygame.time.get_ticks(),
-        "rotation": 0
-    }
+    def move_down(self):
+        self.y += self.speed
+        self.rect.y = self.y
 
+    def set_target_y(self, target_y):
+        self.target_y = target_y
 
-def update_balle(bananas):
-    for banana in bananas:
-        banana["vel"][1] += GRAVITY * DT
-        banana["pos"][0] += banana["vel"][0] * DT * 50
-        banana["pos"][1] += banana["vel"][1] * DT * 50
-        banana["rotation"] += 5
+    def update(self):
+        # Interpolation fluide vers la position cible
+        self.y += (self.target_y - self.y) * self.interpolation_factor
+        self.rect.y = self.y
 
-    # Supprimer les bananes hors écran
-    return [b for b in bananas if b["pos"][1] <= pygame.display.get_surface().get_height()]
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+    def constrain_to_screen(self, min_y, max_y):
+        if self.y < min_y:
+            self.y = min_y
+        elif self.y > max_y - self.height:
+            self.y = max_y - self.height
+        self.rect.y = self.y
