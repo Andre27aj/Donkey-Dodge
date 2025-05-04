@@ -120,7 +120,7 @@ class Joueur:
                 print(f"Could not load image {base_path}{i}.png: {e}")
                 continue
         if not images:
-            fallback = pygame.Surface((100*SCALE_FACTOR, 200*SCALE_FACTOR))
+            fallback = pygame.Surface((80*SCALE_FACTOR, 130*SCALE_FACTOR))
             fallback.fill((255, 0, 0))
             images = [fallback]
         return images
