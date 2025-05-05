@@ -1,3 +1,4 @@
+# Importation des bibliothèques nécessaires
 import pygame
 import sys
 from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
@@ -17,22 +18,24 @@ class Button:
         self.font = pygame.font.SysFont('Arial', int(36 * SCALE_FACTOR))
 
     def draw(self, screen, mouse_pos):
-        # Changer la couleur au survol
+        # Change la couleur si la souris survole le bouton
         color = self.hover_color if self.is_hovered(mouse_pos) else self.color
 
-        # Dessiner le bouton
+        # Dessine le bouton
         pygame.draw.rect(screen, color, self.rect, border_radius=self.border_radius)
         pygame.draw.rect(screen, (255, 255, 255), self.rect,
                          width=self.border_width, border_radius=self.border_radius)
 
-        # Afficher le texte
+        # Affiche le texte du bouton centré dans le rectangle
         text_surface = self.font.render(self.text, True, self.text_color)
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
+    # Vérifie si la souris est sur le bouton
     def is_hovered(self, mouse_pos):
         return self.rect.collidepoint(mouse_pos)
 
+    # Vérifie si le bouton a été cliqué
     def is_clicked(self, mouse_pos, event):
         return event.type == pygame.MOUSEBUTTONDOWN and self.is_hovered(mouse_pos)
 
@@ -45,6 +48,7 @@ class Screen:
         self.background = self.load_background()
         self.clock = pygame.time.Clock()
 
+    # Charge l'image de fond, ou crée un fond bleu par défaut si l'image échoue
     def load_background(self):
         try:
             background = pygame.image.load("Image/Back.png")
@@ -65,6 +69,7 @@ class MainMenu:
         self.buttons = self.create_buttons()
         self.title = self.create_title()
 
+    # Crée les boutons du menu principal
     def create_buttons(self):
         # Paramètres des boutons
         button_width = int(300 * SCALE_FACTOR)
@@ -86,6 +91,7 @@ class MainMenu:
                    button_width, button_height, "Quitter", "quitter")
         ]
 
+    # Crée et positionne le titre "Donkey Dodge"
     def create_title(self):
         title_font = pygame.font.SysFont('Arial', int(72 * SCALE_FACTOR), bold=True)
         title_surf = title_font.render("Donkey Dodge", True, (255, 220, 0))
@@ -96,6 +102,7 @@ class MainMenu:
 
         return (title_surf, title_rect)
 
+    # Gère les événements utilisateur pour les interactions avec le menu
     def handle_events(self, mouse_pos):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -116,6 +123,7 @@ class MainMenu:
                         pygame.quit()
                         sys.exit()
 
+    # Affiche tous les éléments graphiques du menu
     def draw(self, mouse_pos):
         # Afficher le fond
         self.screen.get_surface().blit(self.screen.background, (0, 0))
@@ -129,6 +137,7 @@ class MainMenu:
 
         pygame.display.flip()
 
+    # Boucle principale du menu
     def run(self):
         while self.running:
             mouse_pos = pygame.mouse.get_pos()
@@ -143,6 +152,7 @@ class RulesScreen:
         self.running = True
         self.title = self.create_title()
         self.back_button = self.create_back_button()
+        # Liste des règles du jeu à afficher
         self.rules = [
             "Bienvenue dans Donkey Dodge !",
             "Évitez les bananes lancées par les singes sur les côtés.",
@@ -244,7 +254,7 @@ class LeaderboardScreen:
         # Afficher le titre
         self.screen.get_surface().blit(self.title[0], self.title[1])
 
-        # Afficher le message temporaire
+        # Affiche un message temporaire pour le classement
         message = self.text_font.render("Fonctionnalité à venir prochainement!", True, (255, 255, 255))
         message_rect = message.get_rect(center=(self.screen.width // 2, self.screen.height // 2))
         self.screen.get_surface().blit(message, message_rect)
@@ -262,6 +272,7 @@ class LeaderboardScreen:
             self.screen.clock.tick(60)
 
 
+# Fonction principale qui initialise Pygame et lance le menu principal
 def menu_principal():
     pygame.init()
 

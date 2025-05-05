@@ -3,40 +3,40 @@ from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
 
 class Joueur:
     def __init__(self, image_path, position):
-        # Base attributes
+        # Attributs du joueur
         self.velocity_x = 0
         self.velocity_y = 0
         self.previous_y = position[1]
         self.rect = pygame.Rect(
             position[0] + int(30*SCALE_FACTOR),
             position[1] + int(60*SCALE_FACTOR),
-            80*SCALE_FACTOR,
-            130*SCALE_FACTOR
+            70*SCALE_FACTOR,
+            110*SCALE_FACTOR
         )
-        # Add boundaries
+        # Limite de la map
         self.left_boundary = pygame.Rect(-10, 0, 10, SCREEN_HEIGHT)
         self.right_boundary = pygame.Rect(SCREEN_WIDTH - 10, 0, 10, SCREEN_HEIGHT)
 
-        # Lives system
+        # Point de vie
         self.max_lives = 3
         self.lives = self.max_lives
         self.invincible = False
         self.invincibility_timer = 0
         self.invincibility_duration = int(60 * SCALE_FACTOR)
 
-        # UI elements
+        # Interface de l'utilisateur
         self.heart_size = int(30 * SCALE_FACTOR)
         self.heart_spacing = int(10 * SCALE_FACTOR)
 
-        # Load animation images
+        # Image loader
         self.load_animation_images()
 
-        # Animation state tracking
+        # Tracking des animations
         self.current_state = "idle"
         self.image = self.idle_images[0] if self.idle_images else pygame.Surface((100, 200))
         self.facing_right = True
 
-        # Animation timing
+        # tempo des animations
         self.idle_timer = 0
         self.idle_threshold = 60
         self.current_frame = 0
@@ -44,20 +44,20 @@ class Joueur:
         self.animation_counter = 0
         self.is_idle = False
 
-        # Scaled physics values
+        # Valeur physique a l'echelle
         self.acceleration = 0.3 * SCALE_FACTOR
         self.max_speed = 7 * SCALE_FACTOR
         self.friction = 0.2 * SCALE_FACTOR
         self.gravity = 0.7 * SCALE_FACTOR
 
-        # Platform collision
+        # Colision des platformez
         self.on_ground = False
         floor_offset = int(270 * SCALE_FACTOR)
         self.floor_rect = pygame.Rect(0, SCREEN_HEIGHT - floor_offset + 40, SCREEN_WIDTH, int(20 * SCALE_FACTOR))
         self.ignore_platforms = []
         self.platform_touching = None
 
-        # Jump physics
+        # Physique du saut
         self.base_jump_force = -18 * SCALE_FACTOR
         self.speed_jump_bonus = 0.3 * SCALE_FACTOR
         self.jump_force = self.base_jump_force
@@ -66,7 +66,7 @@ class Joueur:
         self.max_jump_charge = 20
         self.charge_bonus = 0.5 * SCALE_FACTOR
 
-        # Sprint mechanics
+        # Principe du sprint
         self.normal_acceleration = 0.5 * SCALE_FACTOR
         self.normal_max_speed = 7 * SCALE_FACTOR
         self.sprint_acceleration = 1.0 * SCALE_FACTOR
@@ -80,7 +80,7 @@ class Joueur:
         self.max_speed = 12 * SCALE_FACTOR
         self.sprinting = False
 
-        # Dash mechanics
+        # Le dash
         self.dash_available = True
         self.dash_cooldown = 0
         self.dash_cooldown_max = int(45 * SCALE_FACTOR)
@@ -91,14 +91,14 @@ class Joueur:
         self.dash_ghost_duration = 15
 
     def load_animation_images(self):
-        # Load idle images
+        # Chargement des images de l'état immobile
         self.idle_images = self.load_image_set("Image/Idle/Idle", 5)
-        # Load running images
+        # Chargement des images de la course
         self.run_images = self.load_image_set("Image/Course/Course", 5)
-        # Load jumping images
+        # Chargement des images du saut
         self.jump_images = self.load_image_set("Image/Jump/Jump", 2)
 
-        # Fallback if any set is empty
+        # Valeur par defaut si ensemble d'images vide
         if not self.idle_images:
             fallback = pygame.Surface((100, 200))
             fallback.fill((255, 0, 0))
@@ -126,18 +126,23 @@ class Joueur:
         return images
 
     def update_player_image(self):
+        # Sélectionne les images en fonction de l'état actuel du joueur
         if self.current_state == "idle":
             current_images = self.idle_images
         elif self.current_state == "running":
             current_images = self.run_images
-        else:  # jumping
+        else:
+            # Si l'état ne correspond ni à "idle" ni à "running", on considère que le joueur est en train de sauter
             current_images = self.jump_images
 
+        # Si l'indice d'image dépasse le nombre d'images disponibles, on le remet à 0
         if self.current_frame >= len(current_images):
             self.current_frame = 0
 
+        # Récupère l'image courante à afficher
         current_img = current_images[self.current_frame]
 
+        # Si le joueur fait face à droite, on affiche l'image telle quelle, sinon on la retourne horizontalement
         if self.facing_right:
             self.image = current_img
         else:
@@ -176,10 +181,10 @@ class Joueur:
                 self.dash_available = True
                 self.dash_cooldown = 0
 
-        # Store previous position
+        # Sauvegarde de la position précédente
         self.previous_y = self.rect.y
 
-        # Determine animation state
+        # Détermine l'état d'animation du joueur
         if not self.on_ground:
             self.current_state = "jumping"
         elif abs(self.velocity_x) > 0.5:
@@ -193,7 +198,7 @@ class Joueur:
             else:
                 self.is_idle = False
 
-        # Update animation frames
+        # Met à jour les images d'animation
         self.animation_counter += 1
         if self.animation_counter >= self.animation_speed:
             self.animation_counter = 0
@@ -204,13 +209,13 @@ class Joueur:
             )
             self.update_player_image()
 
-        # Update facing direction
+        # Met à jour la direction dans laquelle le joueur regarde
         if self.velocity_x > 0.5 and not self.facing_right:
             self.facing_right = True
         elif self.velocity_x < -0.5 and self.facing_right:
             self.facing_right = False
 
-        # Handle dash activation
+        # Gère l'activation du dash
         if keys[pygame.K_RSHIFT] and self.dash_available:
             dash_direction = 0
             if self.velocity_x > 0.5:
@@ -227,42 +232,42 @@ class Joueur:
                 dash_direction = -1
 
             if dash_direction != 0:
-                # Store current position for ghost effect
+                # Stocke la position actuelle pour créer l'effet fantôme
                 old_pos = self.rect.topleft
 
-                # Calculate dash distance
+                # Calcule la distance du dash
                 dash_x = dash_direction * self.dash_distance
 
-                # Store intermediate positions for ghost trail
+                # Enregistre les positions intermédiaires pour l'effet de traînée du dash
                 self.dash_ghosts = []
                 for i in range(1, self.dash_ghost_frames + 1):
                     ghost_x = old_pos[0] + (dash_x * i / self.dash_ghost_frames)
                     self.dash_ghosts.append((ghost_x, old_pos[1]))
 
-                # Apply teleport
+                # Applique le déplacement instantané
                 self.rect.x += dash_x
 
-                # Reset dash cooldown
+                # Réinitialise le temps de recharge du dash
                 self.dash_available = False
                 self.dash_cooldown = 0
                 self.dash_ghost_timer = 0
 
-                # Maintain vertical velocity but reduce horizontal momentum
+                # Conserve la vitesse verticale mais réduit l'élan horizontal
                 self.velocity_x *= 0.3
 
-        # Horizontal movement
+        # Mouvement horizontal
         if keys[pygame.K_LEFT]:
             self.velocity_x -= self.acceleration
         elif keys[pygame.K_RIGHT]:
             self.velocity_x += self.acceleration
         else:
-            # Apply friction
+            # Applique la friction
             if self.velocity_x > 0:
                 self.velocity_x -= self.friction
             elif self.velocity_x < 0:
                 self.velocity_x += self.friction
 
-        # Determine direction
+        # Détermine la direction du joueur
         old_direction = self.direction
         if keys[pygame.K_LEFT]:
             self.direction = -1
@@ -271,12 +276,12 @@ class Joueur:
         else:
             self.direction = 0
 
-        # Reset movement timer if direction changed
+        # Réinitialise le temps de déplacement si la direction a changé
         if self.direction != old_direction:
             self.movement_time = 0
             self.velocity_x *= 0.5  # Slow down when changing direction
 
-        # Handle sprinting
+        # Gère le sprint
         if self.direction != 0:
             self.movement_time = min(self.max_sprint_time, self.movement_time + 1)
             sprint_factor = min(1.0, self.movement_time / self.sprint_threshold)
@@ -291,12 +296,12 @@ class Joueur:
             self.sprinting = False
             self.movement_time = 0
 
-        # Cap maximum speed
+        # Limite la vitesse maximale
         max_current_speed = self.min_speed + (self.max_speed - self.min_speed) * (
             min(1.0, self.movement_time / self.sprint_threshold))
         self.velocity_x = max(-max_current_speed, min(max_current_speed, self.velocity_x))
 
-        # Jumping
+        # Saut
         if keys[pygame.K_UP]:
             if self.on_ground:
                 # Force de saut immédiate quand on est au sol
@@ -320,7 +325,7 @@ class Joueur:
 
 
 
-        # Drop from platform
+        # Descend d'une plateforme
         if keys[
             pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:
             self.ignore_platforms.append(self.platform_touching)
@@ -328,12 +333,12 @@ class Joueur:
             self.velocity_y = 1
             self.platform_touching = None
 
-        # Apply gravity and movement
+        # Applique la gravité et déplace le joueur
         self.velocity_y += self.gravity
         self.rect.x += self.velocity_x
         self.rect.y += self.velocity_y
 
-        # Check boundary collisions
+        # Vérifie les collisions avec les bords de l'écran
         if self.rect.colliderect(self.left_boundary):
             self.rect.left = 0
             self.velocity_x = 0
@@ -346,7 +351,7 @@ class Joueur:
             self.rect.top = 0
             self.velocity_y = 0
 
-        # Platform collision
+        # Gère les collisions avec les plateformes
         self.on_ground = False
         self.platform_touching = None
 
@@ -363,11 +368,11 @@ class Joueur:
                     self.jumping = False
                     self.platform_touching = platform
 
-        # Clean up ignored platforms
+        # Réinitialise les plateformes ignorées
         if self.velocity_y >= 0:
             self.ignore_platforms = []
 
-        # Handle floor collision
+        # Gère la collision avec le sol
         if self.rect.colliderect(self.floor_rect):
             self.rect.bottom = self.floor_rect.top
             self.on_ground = True
