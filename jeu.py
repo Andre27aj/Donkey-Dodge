@@ -1,9 +1,9 @@
 import pygame
 from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
 from lanceur import Launcher  # Your launcher class
-from BananeManager import BananeManager  # Banana manager
-from Joueur import Joueur  # Your player class
-from fonc import game_over  # Function to handle game over
+from bananeManager import BananeManager  # Banana manager
+from joueur import Joueur  # Your player class
+from fonctions import game_over  # Function to handle game over
 
 def main_game(existing_screen=None):
     global screen

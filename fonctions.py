@@ -11,7 +11,7 @@ def draw_hearts(screen, lives, heart_img):
         screen.blit(heart_img, (heart_margin + i * (heart_size + heart_spacing), heart_margin))
 
 
-def game_over(screen):
+def game_over(screen, score = 0):
     # Obtenir les dimensions actuelles de l'écran
     screen_width = screen.get_width()
     screen_height = screen.get_height()
@@ -20,6 +20,13 @@ def game_over(screen):
     overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 128))  # Black with 50% transparency
     screen.blit(overlay, (0, 0))
+
+    # Afficher le score final
+    score_font_size = int(36 * SCALE_FACTOR)
+    score_font = pygame.font.SysFont('Arial', score_font_size)
+    score_text = score_font.render(f"Score final: {score}", True, (255, 255, 255))
+    score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 2 - int(50 * SCALE_FACTOR)))
+    screen.blit(score_text, score_rect)
 
     # Adapter la taille de la police à l'écran
     font_size = int(74 * SCALE_FACTOR)
@@ -55,28 +62,28 @@ def game_over(screen):
     rematch_text_x = rematch_button.centerx - rematch_text.get_width() // 2
     rematch_text_y = rematch_button.centery - rematch_text.get_height() // 2
 
-    # Bouton quitter
-    quit_button = pygame.Rect(
+    # Bouton menu
+    menu_button = pygame.Rect(
         screen_width // 2 + button_spacing // 2,
         text_y + text.get_height() + int(50 * SCALE_FACTOR),
         button_width,
         button_height
     )
-    quit_text = button_font.render("Quit", True, (255, 255, 255))
-    quit_text_x = quit_button.centerx - quit_text.get_width() // 2
-    quit_text_y = quit_button.centery - quit_text.get_height() // 2
+    menu_text = button_font.render("Menu", True, (255, 255, 255))
+    menu_text_x = menu_button.centerx - menu_text.get_width() // 2
+    menu_text_y = menu_button.centery - menu_text.get_height() // 2
 
     # Dessiner les boutons
     pygame.draw.rect(screen, (50, 120, 200), rematch_button, border_radius=10)
-    pygame.draw.rect(screen, (200, 50, 50), quit_button, border_radius=10)
+    pygame.draw.rect(screen, (200, 50, 50), menu_button, border_radius=10)
 
     # Dessiner les bordures des boutons
     pygame.draw.rect(screen, (255, 255, 255), rematch_button, width=2, border_radius=10)
-    pygame.draw.rect(screen, (255, 255, 255), quit_button, width=2, border_radius=10)
+    pygame.draw.rect(screen, (255, 255, 255), menu_button, width=2, border_radius=10)
 
     # Dessiner le texte des boutons
     screen.blit(rematch_text, (rematch_text_x, rematch_text_y))
-    screen.blit(quit_text, (quit_text_x, quit_text_y))
+    screen.blit(menu_text, (menu_text_x, menu_text_y))
 
     pygame.display.flip()
 
@@ -85,15 +92,15 @@ def game_over(screen):
     while waiting:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return "quit"
+                return "menu"
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if rematch_button.collidepoint(event.pos):
                     return "rematch"
-                if quit_button.collidepoint(event.pos):
-                    return "quit"
+                if menu_button.collidepoint(event.pos):
+                    return "menu"
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return "quit"
+                    return "menu"
                 if event.key == pygame.K_RETURN:
                     return "rematch"
 
@@ -103,10 +110,10 @@ def game_over(screen):
             pygame.draw.rect(screen, (80, 150, 230), rematch_button, border_radius=10)
             pygame.draw.rect(screen, (255, 255, 255), rematch_button, width=3, border_radius=10)
             screen.blit(rematch_text, (rematch_text_x, rematch_text_y))
-        if quit_button.collidepoint(mouse_pos):
-            pygame.draw.rect(screen, (230, 80, 80), quit_button, border_radius=10)
-            pygame.draw.rect(screen, (255, 255, 255), quit_button, width=3, border_radius=10)
-            screen.blit(quit_text, (quit_text_x, quit_text_y))
+        if menu_button.collidepoint(mouse_pos):
+            pygame.draw.rect(screen, (230, 80, 80), menu_button, border_radius=10)
+            pygame.draw.rect(screen, (255, 255, 255), menu_button, width=3, border_radius=10)
+            screen.blit(menu_text, (menu_text_x, menu_text_y))
 
         pygame.display.flip()
         pygame.time.delay(10)
