@@ -6,12 +6,15 @@ from Banane import Banane
 class BananeManager:
     def __init__(self, scale_factor, max_bananes=2):
         self.bananes = []
+        self.bananes_gauche = []
+        self.bananes_droite = []
         self.scale_factor = scale_factor
-        self.max_bananes = max_bananes
+        self.max_bananes_par_lanceur = max_bananes
         self.firing_cooldown = 500  # millisecondes
         self.last_left_fire_time = 0
         self.last_right_fire_time = 0
-
+        self.score = 0
+        self.bananes_a_compter = []
         # Système de visée indépendant pour chaque côté
         self.aiming_left = False
         self.aiming_right = False
@@ -30,12 +33,6 @@ class BananeManager:
         self.paused = False
 
     def create_banane(self, pos_x, pos_y, angle_min, angle_max, power, direction=1):
-        """
-        Crée une nouvelle banane avec une trajectoire plus haute et plus longue
-        direction: 1 pour droite, -1 pour gauche
-        """
-        if len(self.bananes) >= self.max_bananes:
-            return None
 
         # Augmenter l'angle pour une trajectoire plus haute
         angle = random.uniform(angle_min * 0.7, angle_max * 0.7)  # Augmente l'angle pour une trajectoire plus haute
@@ -103,26 +100,38 @@ class BananeManager:
         if self.paused:
             return False
 
-        if current_time - self.last_left_fire_time < self.firing_cooldown and direction == 1:
+        # Vérifier le cooldown pour chaque lanceur
+        if direction == 1 and current_time - self.last_left_fire_time < self.firing_cooldown:
             return False
-        if current_time - self.last_right_fire_time < self.firing_cooldown and direction == -1:
+        if direction == -1 and current_time - self.last_right_fire_time < self.firing_cooldown:
             return False
 
-        num_bananas = 2
-        for _ in range(num_bananas):
-            if len(self.bananes) < self.max_bananes:
-                angle_variation = random.uniform(-5, 5)
-                banane = self.create_banane(
-                    lanceur_rect.centerx,
-                    lanceur_rect.bottom,
-                    angle_min + angle_variation,
-                    angle_max + angle_variation,
-                    power,
-                    direction
-                )
-                if banane:
-                    self.bananes.append(banane)
+        # Vérifier le nombre de bananes pour chaque lanceur
+        if direction == 1 and len(self.bananes_gauche) >= self.max_bananes_par_lanceur :
+            return False
+        if direction == -1 and len(self.bananes_droite) >= self.max_bananes_par_lanceur:
+            return False
 
+        # Une seule banane par tir
+        angle_variation = random.uniform(-5, 5)
+        banane = self.create_banane(
+            lanceur_rect.centerx,
+            lanceur_rect.bottom,
+            angle_min + angle_variation,
+            angle_max + angle_variation,
+            power,
+            direction
+        )
+
+        if banane:
+            self.bananes.append(banane)
+            # Ajouter à la liste correspondante selon la direction
+            if direction == 1:
+                self.bananes_gauche.append(banane)
+            else:
+                self.bananes_droite.append(banane)
+
+        # Mettre à jour le temps de tir
         if direction == 1:
             self.last_left_fire_time = current_time
         else:
@@ -157,7 +166,15 @@ class BananeManager:
 
             # Supprimer les bananes qui sortent de l'écran
             if banane.is_out_of_bounds(screen_height):
+                if banane not in self.bananes_a_compter :
+                    self.score += 1
+
                 self.bananes.remove(banane)
+                # Supprimer également des listes spécifiques
+                if banane in self.bananes_gauche:
+                    self.bananes_gauche.remove(banane)
+                elif banane in self.bananes_droite:
+                    self.bananes_droite.remove(banane)
 
     def check_collisions(self, joueur):
         if self.paused:
@@ -176,6 +193,7 @@ class BananeManager:
             if banane.collides_with(joueur):
                 collision_detected = True
                 bananes_to_remove.append(banane)
+                self.bananes_a_compter.append(banane)
 
         # Appliquer les dégâts une seule fois si collision détectée
         if collision_detected:
@@ -190,6 +208,11 @@ class BananeManager:
             for banane in bananes_to_remove:
                 if banane in self.bananes:
                     self.bananes.remove(banane)
+                    # Supprimer des listes spécifiques
+                    if banane in self.bananes_gauche:
+                        self.bananes_gauche.remove(banane)
+                    elif banane in self.bananes_droite:
+                        self.bananes_droite.remove(banane)
 
             return True
 
@@ -225,6 +248,16 @@ class BananeManager:
         # Afficher l'écran de pause si nécessaire
         if self.paused:
             self._draw_pause_screen(screen)
+
+        # Afficher le score
+        font = pygame.font.SysFont('Arial', int(32 * self.scale_factor))
+        score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
+
+        score_rect = score_text.get_rect()
+        score_rect.centerx = screen.get_width() // 2
+        score_rect.top = 20  # Distance depuis le haut de l'écran
+
+        screen.blit(score_text, score_rect)
 
     def _draw_pause_screen(self, screen):
         """Dessine l'écran de pause"""

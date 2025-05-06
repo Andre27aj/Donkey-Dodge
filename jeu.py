@@ -3,11 +3,14 @@ from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
 from lanceur import Launcher  # Votre classe de lanceurs
 from BananeManager import BananeManager  # Gestionnaire de bananes
 from Joueur import Joueur  # Votre classe joueur
-from fonc import game_over  # Fonction pour gérer la fin de partie
+from Fonctions import game_over  # Fonction pour gérer la fin de partie
+from Score import ScoreManager
 
 def main_game(existing_screen=None):
     global screen
 
+    # Initialisez-le au début du jeu
+    score_manager = ScoreManager()
     # Utilisation de l'écran existant, sinon en créer un nouveau
     if existing_screen:
         screen = existing_screen
@@ -75,7 +78,7 @@ def main_game(existing_screen=None):
     lanceur_droite = Launcher(x_droite, y_lanceur_droite, is_left=False, scale_factor=SCALE_FACTOR)
 
     # Initialisation du gestionnaire de bananes
-    banane_manager = BananeManager(SCALE_FACTOR, max_bananes=2)
+    banane_manager = BananeManager(SCALE_FACTOR, max_bananes=1)
 
     # Limites de hauteur pour les balles
     y_min = 50
@@ -184,9 +187,12 @@ def main_game(existing_screen=None):
                     joueur.lives = joueur.max_lives
                     joueur.invincible = False
                     banane_manager.bananes = []
+                    banane_manager.score = 0
                     joueur.rect.x = SCREEN_WIDTH // 2 - 65
                     joueur.rect.y = SCREEN_HEIGHT - 300
-                else:  # "quit"
+                elif action == "menu" :
+                    return "menu"
+                else :
                     run = False
 
         # Affichage (toujours effectué, même en pause)
@@ -244,4 +250,10 @@ def main_game(existing_screen=None):
         pygame.display.flip()
         clock.tick(60)  # Limiter à 60 FPS
 
+        if joueur.lives <= 0:
+            score_manager.enregistrer_score(banane_manager.score)
+            action = game_over(screen, banane_manager.score)  # Passez le score à l'écran de game over
+
+        if not run :
+            return "quit"
     pygame.quit()
