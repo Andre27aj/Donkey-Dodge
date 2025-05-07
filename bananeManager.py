@@ -1,6 +1,6 @@
 import random
 import math
-from Banane import Banane
+from banane import Banane
 
 
 class BananeManager:
