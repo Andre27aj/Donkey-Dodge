@@ -261,7 +261,6 @@ class LeaderboardScreen:
             self.draw(mouse_pos)
             self.screen.clock.tick(60)
 
-
 def menu_principal():
     pygame.init()
 
@@ -271,9 +270,43 @@ def menu_principal():
     height = int(info.current_h * 0.8)
     pygame.display.set_caption("Menu Principal")
 
+    # Création de la surface d'assombrissement pour le menu
+    overlay = pygame.Surface((width, height))
+    overlay.fill((0, 0, 0))  # Surface noire
+    overlay.set_alpha(128)  # Valeur alpha semi-transparente
+
     screen = Screen(width, height)
+
+    # Ajouter l'overlay à l'objet screen pour y accéder plus tard
+    screen.overlay = overlay
+
+    # Modification de la méthode draw de MainMenu
+    original_draw = MainMenu.draw
+
+    def new_draw(self, mouse_pos):
+        # Afficher le fond
+        self.screen.get_surface().blit(self.screen.background, (0, 0))
+
+        # Appliquer l'overlay semi-transparent
+        self.screen.get_surface().blit(self.screen.overlay, (0, 0))
+
+        # Afficher le titre
+        self.screen.get_surface().blit(self.title[0], self.title[1])
+
+        # Afficher les boutons
+        for button in self.buttons:
+            button.draw(self.screen.get_surface(), mouse_pos)
+
+        pygame.display.flip()
+
+    # Remplacer temporairement la méthode draw
+    MainMenu.draw = new_draw
+
     main_menu = MainMenu(screen)
     main_menu.run()
+
+    # Restaurer la méthode originale
+    MainMenu.draw = original_draw
 
     def create_title(self):
         title_font = pygame.font.SysFont('Arial', int(48 * SCALE_FACTOR), bold=True)
