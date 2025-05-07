@@ -1,5 +1,2 @@
 # Donkey-Dodge
-
-Présentation
-ljkh
-hahhahaha
+HADJ ISA Adam & MARTINS-SILVA Lisa & ALBUQUERQUE JOAQUIM André & HEBRAUD Clément & DELPORTE Roman
