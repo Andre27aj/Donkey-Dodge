@@ -1,14 +1,17 @@
 import pygame
 from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
-from lanceur import Launcher  # Your launcher class
-from bananeManager import BananeManager  # Banana manager
-from joueur import Joueur  # Your player class
-from fonctions import game_over  # Function to handle game over
+from lanceur import Launcher  # Votre classe de lanceurs
+from bananeManager import BananeManager  # Gestionnaire de bananes
+from joueur import Joueur  # Votre classe joueur
+from fonctions import game_over  # Fonction pour gérer la fin de partie
+from score import ScoreManager
 
 def main_game(existing_screen=None):
     global screen
 
-    # Utiliser l'écran existant ou en créer un nouveau s'il n'est pas fourni
+    # Initialisez-le au début du jeu
+    score_manager = ScoreManager()
+    # Utilisation de l'écran existant, sinon en créer un nouveau
     if existing_screen:
         screen = existing_screen
         SCREEN_WIDTH = screen.get_width()
@@ -31,7 +34,7 @@ def main_game(existing_screen=None):
     heart_img = pygame.image.load("Image/heart.png")
     heart_img = pygame.transform.scale(heart_img, (int(30 * SCALE_FACTOR), int(30 * SCALE_FACTOR)))
 
-    # Charger et redimensionner les images
+    # Chargement et redimensionnement des images
     back = pygame.image.load("Image/Back.png")
     back = pygame.transform.scale(back, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -44,7 +47,7 @@ def main_game(existing_screen=None):
 
     platformeH_display = platformeH.get_rect(topleft=(
         SCREEN_WIDTH // 2 - int(170 * SCALE_FACTOR),
-        SCREEN_HEIGHT // 2 - int(50 * SCALE_FACTOR)  # Adjusted position
+        SCREEN_HEIGHT // 2 - int(50 * SCALE_FACTOR)  # Position ajustée
     ))
     platform2_display = platform2.get_rect(topleft=(
         int(SCREEN_WIDTH * 0.75) - int(150 * SCALE_FACTOR),
@@ -70,14 +73,14 @@ def main_game(existing_screen=None):
     y_lanceur_gauche = 0
     y_lanceur_droite = 0
 
-    # Créer des objets Lanceur au lieu de rectangles
+    # Création des objets Launcher au lieu des rectangles
     lanceur_gauche = Launcher(x_gauche, y_lanceur_gauche, is_left=True, scale_factor=SCALE_FACTOR)
     lanceur_droite = Launcher(x_droite, y_lanceur_droite, is_left=False, scale_factor=SCALE_FACTOR)
 
-    # Initialiser le gestionnaire de bananes
-    banane_manager = BananeManager(SCALE_FACTOR, max_bananes=2)
+    # Initialisation du gestionnaire de bananes
+    banane_manager = BananeManager(SCALE_FACTOR, max_bananes=1)
 
-    # Limites de hauteur pour les projectiles
+    # Limites de hauteur pour les balles
     y_min = 50
     y_max = SCREEN_HEIGHT - 4
 
@@ -89,11 +92,11 @@ def main_game(existing_screen=None):
     y_lanceur_gauche = y_median
     y_lanceur_droite = y_median
 
-    # Recréer les objets Lanceur avec la position médiane pour un mouvement fluide
+    # Création des objets Launcher au lieu des rectangles
     lanceur_gauche = Launcher(x_gauche, y_lanceur_gauche, is_left=True, scale_factor=SCALE_FACTOR)
     lanceur_droite = Launcher(x_droite, y_lanceur_droite, is_left=False, scale_factor=SCALE_FACTOR)
 
-    # Au lieu de positions cibles aléatoires, utiliser la position médiane pour le dernier tir
+    # Puis, au lieu d'avoir des positions cibles aléatoires, utilisez aussi la position médiane
     dernier_tir_gauche = y_median
     dernier_tir_droite = y_median
 
@@ -110,17 +113,17 @@ def main_game(existing_screen=None):
             if event.type == pygame.QUIT:
                 run = False
 
-            # Gérer la pause avec la touche espace
+            # Gestion de la pause avec la touche espace
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 paused = banane_manager.toggle_pause()
-                # Si la pause est activée, arrêter tout mouvement du joueur
+                # Si on active la pause, on arrête tout mouvement du joueur
                 if paused:
                     joueur.velocity_x = 0
                     joueur.velocity_y = 0
 
-            # Traiter les autres commandes uniquement si le jeu n'est pas en pause
+            # Ne traiter les autres commandes que si le jeu n'est pas en pause
             if not banane_manager.paused:
-                # Gérer les événements clavier pour le système de visée
+                # Gestion des événements de touche pour le système de visée
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_a:
                         key_a_pressed = True
@@ -137,12 +140,12 @@ def main_game(existing_screen=None):
                         key_d_pressed = False
                         banane_manager.release_shot_right(lanceur_droite.rect, current_time)
 
-        # Mettre à jour la logique du jeu uniquement si le jeu n'est pas en pause
+        # Ne mettre à jour la logique du jeu que si le jeu n'est pas en pause
         if not banane_manager.paused:
-            # Mettre à jour le joueur
+            # Mise à jour du joueur
             joueur.update([platformeH_rect, platform2_rect, platform3_rect])
 
-            # Vérifier les limites de l'écran
+            # Vérification des limites de l'écran
             if joueur.rect.left < 0:
                 joueur.rect.left = 0
                 joueur.velocity_x = 0
@@ -150,7 +153,7 @@ def main_game(existing_screen=None):
                 joueur.rect.right = SCREEN_WIDTH
                 joueur.velocity_x = 0
 
-            # Gérer les contrôles des lanceurs via les méthodes de classe
+            # Gestion des contrôles des lanceurs avec les méthodes de la classe
             keys = pygame.key.get_pressed()
             if keys[pygame.K_w]:
                 lanceur_gauche.move_up()
@@ -159,13 +162,13 @@ def main_game(existing_screen=None):
                 lanceur_gauche.move_down()
                 lanceur_droite.move_down()
 
-            # Vérifier les collisions avec les lanceurs
+            # Vérification des collisions avec les lanceurs
             if joueur.rect.colliderect(lanceur_gauche.rect):
-                joueur.rect.x = lanceur_gauche.rect.right  # Repousser le joueur
+                joueur.rect.x = lanceur_gauche.rect.right  # Renvoyer le joueur en arrière
             if joueur.rect.colliderect(lanceur_droite.rect):
-                joueur.rect.x = lanceur_droite.rect.left - joueur.rect.width  # Repousser le joueur
+                joueur.rect.x = lanceur_droite.rect.left - joueur.rect.width  # Renvoyer le joueur en arrière
 
-            # Mettre à jour les lanceurs avec une interpolation fluide
+            # Mise à jour des lanceurs avec interpolation fluide
             lanceur_gauche.set_target_y(dernier_tir_gauche)
             lanceur_droite.set_target_y(dernier_tir_droite)
             lanceur_gauche.update()
@@ -173,61 +176,64 @@ def main_game(existing_screen=None):
             lanceur_gauche.constrain_to_screen(y_min, joueur.floor_rect.top)
             lanceur_droite.constrain_to_screen(y_min, joueur.floor_rect.top)
 
-            # Mettre à jour les bananes avec le gestionnaire
+            # Mise à jour des bananes avec le gestionnaire
             banane_manager.update(dt, g, SCREEN_HEIGHT)
 
-            # Vérifier les collisions avec le joueur
+            # Vérification des collisions avec le joueur
             if banane_manager.check_collisions(joueur) and joueur.lives <= 0:
                 action = game_over(screen)
                 if action == "rematch":
-                    # Recommencer la partie
+                    # recommencer le jeu
                     joueur.lives = joueur.max_lives
                     joueur.invincible = False
                     banane_manager.bananes = []
+                    banane_manager.score = 0
                     joueur.rect.x = SCREEN_WIDTH // 2 - 65
                     joueur.rect.y = SCREEN_HEIGHT - 300
-                else:  # "quitter"
+                elif action == "menu" :
+                    return "menu"
+                else :
                     run = False
 
-        # Rendu (toujours effectué, même en pause)
+        # Affichage (toujours effectué, même en pause)
         screen.blit(back, (0, 0))
 
-        # Dessiner les plateformes
+        # Affichage des plateformes
         screen.blit(platformeH, platformeH_display)
         screen.blit(platform2, platform2_display)
         screen.blit(platform3, platform3_display)
 
-        # Dessiner les lanceurs avec leur méthode draw
+        # Affichage des lanceurs avec leur méthode draw
         lanceur_gauche.draw(screen)
         lanceur_droite.draw(screen)
 
-        # Dessiner les bananes et l'UI de pause
+        # Affichage des bananes et UI de pause
         banane_manager.draw(screen)
 
-        # Dessiner le joueur (avec effet de clignotement d'invincibilité)
+        # Gestion de l'affichage du joueur (avec invincibilité)
         if not joueur.invincible or joueur.invincibility_timer % 18 >= 9:
             screen.blit(joueur.image, joueur.rect.topleft)
 
-        # Dessiner les cœurs pour les vies
+        # Affiche les coeurs mis à l'échelle
         heart_margin = int(20 * SCALE_FACTOR)
         heart_size = int(30 * SCALE_FACTOR)
         heart_spacing = int(10 * SCALE_FACTOR)
         for i in range(joueur.lives):
             screen.blit(heart_img, (heart_margin + i * (heart_size + heart_spacing), heart_margin))
 
-        # Dessiner l'effet de dash
+        # Affichage du joueur qui dash
         if joueur.dash_ghosts:
-            # Calculer l'alpha en fonction du temps restant
+            # Calcule alpha en fonction du temps restant
             alpha_factor = 1 - (joueur.dash_ghost_timer / joueur.dash_ghost_duration)
 
             for i, ghost_pos in enumerate(joueur.dash_ghosts):
-                # Afficher l'effet fantôme du dash en transparence
+                # rendre le dash transparent
                 ghost_alpha = int(200 * alpha_factor * (1 - i / len(joueur.dash_ghosts)))
                 ghost_img = joueur.image.copy()
                 ghost_img.set_alpha(ghost_alpha)
                 screen.blit(ghost_img, ghost_pos)
 
-        # Barre de recharge du dash
+        # Cooldown du dash
         if not joueur.dash_available:
             cooldown_width = int(50 * SCALE_FACTOR)
             cooldown_height = int(10 * SCALE_FACTOR)
@@ -244,4 +250,10 @@ def main_game(existing_screen=None):
         pygame.display.flip()
         clock.tick(60)  # Limiter à 60 FPS
 
+        if joueur.lives <= 0:
+            score_manager.enregistrer_score(banane_manager.score)
+            action = game_over(screen, banane_manager.score)  # Passez le score à l'écran de game over
+
+        if not run :
+            return "quit"
     pygame.quit()
