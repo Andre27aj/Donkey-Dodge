@@ -15,12 +15,12 @@ class ScoreManager:
                 writer = csv.writer(f)
                 writer.writerow(['Date', 'Pseudo', 'Score'])
 
-    def enregistrer_score(self, score):
+    def enregistrer_score(self, pseudo, score):
         """Enregistre un nouveau score dans le fichier CSV"""
         date_actuelle = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         with open(self.fichier, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([date_actuelle, score])
+            writer.writerow([date_actuelle,pseudo, score])
 
     def obtenir_meilleurs_scores(self, nombre=10):
         """Récupère les meilleurs scores triés"""
@@ -31,13 +31,14 @@ class ScoreManager:
                 next(reader)  # Sauter l'en-tête
                 for row in reader:
                     try:
-                        date, score = row
-                        scores.append((date, int(score)))
+                        if len(row) >= 3:  # Vérifier qu'il y a bien 3 colonnes
+                            date, pseudo, score = row
+                            scores.append((date, pseudo, int(score)))
                     except (ValueError, IndexError):
                         continue
         except FileNotFoundError:
             return []
 
         # Trier par score, du plus grand au plus petit
-        scores.sort(key=lambda x: x[1], reverse=True)
+        scores.sort(key=lambda x: x[2], reverse=True)
         return scores[:nombre]
