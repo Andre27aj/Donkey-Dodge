@@ -3,10 +3,14 @@ from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
 from lanceur import Launcher  # Votre classe de lanceurs
 from bananeManager import BananeManager  # Gestionnaire de bananes
 from joueur import Joueur  # Votre classe joueur
-from fonctions import game_over  # Fonction pour gérer la fin de partie
+from fonctions import game_over
+from score import ScoreManager
 
 def main_game(existing_screen=None):
     global screen
+
+    # Initialisez-le au début du jeu
+    score_manager = ScoreManager()
 
     # Utilisation de l'écran existant, sinon en créer un nouveau
     if existing_screen:
@@ -75,7 +79,7 @@ def main_game(existing_screen=None):
     lanceur_droite = Launcher(x_droite, y_lanceur_droite, is_left=False, scale_factor=SCALE_FACTOR)
 
     # Initialisation du gestionnaire de bananes
-    banane_manager = BananeManager(SCALE_FACTOR, max_bananes=2)
+    banane_manager = BananeManager(SCALE_FACTOR, max_bananes=1)
 
     # Limites de hauteur pour les balles
     y_min = 50
@@ -175,19 +179,10 @@ def main_game(existing_screen=None):
 
             # Mise à jour des bananes avec le gestionnaire
             banane_manager.update(dt, g, SCREEN_HEIGHT)
+            if banane_manager.check_collisions(joueur) :
+                pass
 
-            # Vérification des collisions avec le joueur
-            if banane_manager.check_collisions(joueur) and joueur.lives <= 0:
-                action = game_over(screen)
-                if action == "rematch":
-                    # recommencer le jeu
-                    joueur.lives = joueur.max_lives
-                    joueur.invincible = False
-                    banane_manager.bananes = []
-                    joueur.rect.x = SCREEN_WIDTH // 2 - 65
-                    joueur.rect.y = SCREEN_HEIGHT - 300
-                else:  # "quit"
-                    run = False
+
 
         # Affichage (toujours effectué, même en pause)
         screen.blit(back, (0, 0))
@@ -244,4 +239,24 @@ def main_game(existing_screen=None):
         pygame.display.flip()
         clock.tick(60)  # Limiter à 60 FPS
 
+        if joueur.lives <= 0:
+
+            action = game_over(screen, banane_manager.score)
+
+
+            if action == "rematch":
+                # recommencer le jeu
+                joueur.lives = joueur.max_lives
+                joueur.invincible = False
+                banane_manager.bananes = []
+                banane_manager.score = 0
+                joueur.rect.x = SCREEN_WIDTH // 2 - 65
+                joueur.rect.y = SCREEN_HEIGHT - 300
+            elif action == "menu":
+                return "menu"
+            else:
+                run = False
+
+        if not run :
+            return "quit"
     pygame.quit()
