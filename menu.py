@@ -4,28 +4,41 @@ from constante import SCALE_FACTOR
 from jeu import main_game
 from fonctions import afficher_classement
 
+
 class Button:
     def __init__(self, x, y, width, height, text, action, border_radius=15):
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self.action = action
+        self.text_color = (255, 255, 255)
+        # Smaller font size to fit in square buttons
+        self.font = pygame.font.SysFont('Arial', int(24 * SCALE_FACTOR))
+
+        # Rest of the code remains the same
         self.color = (80, 80, 180)
         self.hover_color = (120, 120, 220)
-        self.text_color = (255, 255, 255)
         self.border_radius = int(border_radius * SCALE_FACTOR)
         self.border_width = int(2 * SCALE_FACTOR)
-        self.font = pygame.font.SysFont('Arial', int(36 * SCALE_FACTOR))
+
+        try:
+            self.button_img = pygame.image.load("Image/button.png")
+            self.button_img = pygame.transform.scale(self.button_img, (width, height))
+            self.use_image = True
+        except pygame.error:
+            self.use_image = False
 
     def draw(self, screen, mouse_pos):
-        # Changer la couleur au survol
-        color = self.hover_color if self.is_hovered(mouse_pos) else self.color
+        if self.use_image:
+            # Use image button
+            screen.blit(self.button_img, self.rect.topleft)
+        else:
+            # Fallback to drawn button
+            color = self.hover_color if self.is_hovered(mouse_pos) else self.color
+            pygame.draw.rect(screen, color, self.rect, border_radius=self.border_radius)
+            pygame.draw.rect(screen, (255, 255, 255), self.rect,
+                             width=self.border_width, border_radius=self.border_radius)
 
-        # Dessiner le bouton
-        pygame.draw.rect(screen, color, self.rect, border_radius=self.border_radius)
-        pygame.draw.rect(screen, (255, 255, 255), self.rect,
-                         width=self.border_width, border_radius=self.border_radius)
-
-        # Afficher le texte
+        # Display text on top of button
         text_surface = self.font.render(self.text, True, self.text_color)
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
@@ -35,7 +48,6 @@ class Button:
 
     def is_clicked(self, mouse_pos, event):
         return event.type == pygame.MOUSEBUTTONDOWN and self.is_hovered(mouse_pos)
-
 
 class Screen:
     def __init__(self, width, height):
@@ -66,35 +78,53 @@ class MainMenu:
         self.title = self.create_title()
 
     def create_buttons(self):
-        # Paramètres des boutons
-        button_width = int(300 * SCALE_FACTOR)
-        button_height = int(70 * SCALE_FACTOR)
-        button_spacing = int(30 * SCALE_FACTOR)
+        # Button parameters
+        button_width = int(150 * SCALE_FACTOR)
+        button_height = button_width
+        button_spacing = int(20 * SCALE_FACTOR)  # Reduced spacing
 
-        # Position des boutons
+        # Center buttons horizontally
         x_pos = self.screen.width // 2 - button_width // 2
-        y_start = self.screen.height // 2 - (button_height * 2 + button_spacing * 1.5)
 
-        # Création des boutons
+        # Position buttons below the title - using a fixed position instead
+        # Leave space at the top for the title (approximately 1/3 of the screen height)
+        y_start = int(self.screen.height * 0.33)
+
+        # Create buttons
         return [
             Button(x_pos, y_start, button_width, button_height, "Jouer", "jouer"),
             Button(x_pos, y_start + (button_height + button_spacing),
-                   button_width, button_height, "Règles du jeu", "regles"),
+                   button_width, button_height, "Règles", "regles"),
             Button(x_pos, y_start + (button_height + button_spacing) * 2,
-                   button_width, button_height, "Classement", "classement"),
+                   button_width, button_height, "Scores", "classement"),
             Button(x_pos, y_start + (button_height + button_spacing) * 3,
                    button_width, button_height, "Quitter", "quitter")
         ]
 
     def create_title(self):
-        title_font = pygame.font.SysFont('Arial', int(72 * SCALE_FACTOR), bold=True)
-        title_surf = title_font.render("Donkey Dodge", True, (255, 220, 0))
+        try:
+            # Load the title image
+            title_img = pygame.image.load("Image/titre.png")
 
-        # Position du titre au-dessus des boutons
-        y_start = self.screen.height // 2 - (int(70 * SCALE_FACTOR) * 2 + int(30 * SCALE_FACTOR) * 1.5)
-        title_rect = title_surf.get_rect(center=(self.screen.width // 2, y_start - int(100 * SCALE_FACTOR)))
+            # Scale the image if needed (adjust width/height as necessary)
+            img_width = int(890 * SCALE_FACTOR)  # Adjust size as needed
+            img_height = int(117 * SCALE_FACTOR)  # Adjust size as needed
+            title_img = pygame.transform.scale(title_img, (img_width, img_height))
 
-        return (title_surf, title_rect)
+            # Position the image
+            y_start = self.screen.height // 2 - (int(70 * SCALE_FACTOR) * 2 + int(30 * SCALE_FACTOR) * 1.5)
+            title_rect = title_img.get_rect(center=(self.screen.width // 2, y_start - int(100 * SCALE_FACTOR)))
+
+            return (title_img, title_rect)
+        except pygame.error:
+            # Fallback to text if image can't be loaded
+            title_font = pygame.font.SysFont('Arial', int(72 * SCALE_FACTOR), bold=True)
+            title_surf = title_font.render("Donkey Dodge", True, (255, 220, 0))
+
+            y_start = self.screen.height // 2 - (int(70 * SCALE_FACTOR) * 2 + int(30 * SCALE_FACTOR) * 1.5)
+            title_rect = title_surf.get_rect(center=(self.screen.width // 2, y_start - int(100 * SCALE_FACTOR)))
+
+            return (title_surf, title_rect)
 
     def handle_events(self, mouse_pos):
         for event in pygame.event.get():
@@ -220,7 +250,7 @@ class LeaderboardScreen:
         self.text_font = pygame.font.SysFont('Arial', int(24 * SCALE_FACTOR))
 
         # Appel direct à la fonction d'affichage du classement
-        self.result = afficher_classement(self.screen.get_surface())
+        self.result =afficher_classement(self.screen.get_surface(), Button, SCALE_FACTOR)
 
         # Gestion du résultat
         if self.result == "quit":
@@ -237,12 +267,14 @@ class LeaderboardScreen:
         return (title_surf, title_rect)
 
     def create_back_button(self):
-        # Cette méthode est définie mais n'est pas utilisée
+        # Create a square button for consistency with other buttons
+        button_size = int(150 * SCALE_FACTOR)
+
         return Button(
-            self.screen.width // 2 - int(150 * SCALE_FACTOR),
-            self.screen.height - int(100 * SCALE_FACTOR),
-            int(300 * SCALE_FACTOR), int(60 * SCALE_FACTOR),
-            "Retour au menu", "back"
+            self.screen.width // 2 - button_size // 2,  # Center horizontally
+            self.screen.height - button_size - int(40 * SCALE_FACTOR),  # Position at bottom with margin
+            button_size, button_size,  # Square button
+            "Retour", "back"  # Shorter text to fit in square button
         )
 
     def handle_events(self, mouse_pos):

@@ -13,11 +13,11 @@ def draw_hearts(screen, lives, heart_img):
 
 
 def game_over(screen, score=0):
-    # Obtenir les dimensions actuelles de l'écran
+    # Obtenir la taille de l'écran
     screen_width = screen.get_width()
     screen_height = screen.get_height()
 
-    # Charger l'image de fond
+    # Charger l'image de fond ou appliquer un fond noir semi-transparent
     try:
         back = pygame.image.load("Image/Back.png").convert_alpha()
         back = pygame.transform.scale(back, (screen_width, screen_height))
@@ -51,7 +51,7 @@ def game_over(screen, score=0):
     input_rect = pygame.Rect(screen_width // 4, screen_height // 2, screen_width // 2, 50)
     input_active = True
 
-    # Boucle de saisie du pseudo
+    # Boucle de saisie du pseudo avec validation
     while input_active:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -98,10 +98,18 @@ def game_over(screen, score=0):
     score_manager = ScoreManager()
     score_manager.enregistrer_score(pseudo, score)
 
-    # Créer les boutons
+    # Création et affichage des boutons Rematch et Menu
     button_width = int(200 * SCALE_FACTOR)
-    button_height = int(50 * SCALE_FACTOR)
+    button_height = int(200 * SCALE_FACTOR)
     button_spacing = int(30 * SCALE_FACTOR)
+
+    # Load button background image - ADD THIS SECTION
+    try:
+        button_background = pygame.image.load("Image/button.png").convert_alpha()
+        button_background = pygame.transform.scale(button_background, (button_width, button_height))
+    except pygame.error:
+        button_background = None
+        print("Could not load button background image")
 
     # Police des boutons
     button_font_size = int(36 * SCALE_FACTOR)
@@ -141,18 +149,32 @@ def game_over(screen, score=0):
     else:
         screen.blit(overlay, (0, 0))
 
+    # Inserted code to load and display "Game Over" image
+    try:
+        game_over_img = pygame.image.load("Image/gameOver.png").convert_alpha()
+        game_over_img = pygame.transform.scale(game_over_img, (int(820 * SCALE_FACTOR), int(110 * SCALE_FACTOR)))
+        game_over_rect = game_over_img.get_rect(center=(screen_width // 2, int(100 * SCALE_FACTOR)))
+        screen.blit(game_over_img, game_over_rect)
+    except pygame.error:
+        print("Impossible de charger l'image de Game Over")
+
     # Afficher le message de remerciement avec le pseudo
     thank_you_text = font.render(f"Merci {pseudo} ! Votre score de {score} a été enregistré", True, (244, 210, 34))
     thank_you_rect = thank_you_text.get_rect(center=(screen_width // 2, screen_height // 3))
     screen.blit(thank_you_text, thank_you_rect)
 
     # Dessiner les boutons
-    pygame.draw.rect(screen, (50, 120, 200), rematch_button, border_radius=10)
-    pygame.draw.rect(screen, (200, 50, 50), menu_button, border_radius=10)
+    if button_background:
+        # Draw buttons with background images
+        screen.blit(button_background, rematch_button)
+        screen.blit(button_background, menu_button)
+    else:
+        # Fallback to colored buttons if image not available
+        pygame.draw.rect(screen, (50, 120, 200), rematch_button, border_radius=10)
+        pygame.draw.rect(screen, (200, 50, 50), menu_button, border_radius=10)
 
-    # Dessiner les bordures des boutons
-    pygame.draw.rect(screen, (255, 255, 255), rematch_button, width=2, border_radius=10)
-    pygame.draw.rect(screen, (255, 255, 255), menu_button, width=2, border_radius=10)
+    # Always draw the borders
+    # Removed white border drawing around buttons as per instructions
 
     # Dessiner le texte des boutons
     screen.blit(rematch_text, (rematch_text_x, rematch_text_y))
@@ -177,28 +199,38 @@ def game_over(screen, score=0):
                 if event.key == pygame.K_RETURN:
                     return "rematch"
 
-        # Effets de survol
+        # Gérer les effets de survol des boutons
         mouse_pos = pygame.mouse.get_pos()
         if rematch_button.collidepoint(mouse_pos):
-            pygame.draw.rect(screen, (80, 150, 230), rematch_button, border_radius=10)
-            pygame.draw.rect(screen, (255, 255, 255), rematch_button, width=3, border_radius=10)
+            if button_background:
+                screen.blit(button_background, rematch_button)
+                # Removed border drawing on hover
+            else:
+                pygame.draw.rect(screen, (80, 150, 230), rematch_button, border_radius=10)
+                # Removed border drawing on hover
             screen.blit(rematch_text, (rematch_text_x, rematch_text_y))
+
         if menu_button.collidepoint(mouse_pos):
-            pygame.draw.rect(screen, (230, 80, 80), menu_button, border_radius=10)
-            pygame.draw.rect(screen, (255, 255, 255), menu_button, width=3, border_radius=10)
+            if button_background:
+                screen.blit(button_background, menu_button)
+                # Removed border drawing on hover
+            else:
+                pygame.draw.rect(screen, (230, 80, 80), menu_button, border_radius=10)
+                # Removed border drawing on hover
             screen.blit(menu_text, (menu_text_x, menu_text_y))
 
         pygame.display.flip()
         pygame.time.delay(10)
 
 
-def afficher_classement(screen):
+def afficher_classement(screen, Button_class=None, scale_factor=None):
+    # Use the provided scale factor or use the imported one
+    if scale_factor is None:
+        scale_factor = SCALE_FACTOR
 
     # Couleurs
     TEXT_COLOR = (255, 255, 255)  # Blanc
     TITLE_COLOR = (255, 215, 0)  # Or
-    BUTTON_COLOR = (70, 130, 180)  # Bleu acier
-    BUTTON_HOVER = (100, 149, 237)  # Bleu clair
     OVERLAY_COLOR = (0, 0, 0, 128)  # Noir semi-transparent
 
     # Dimensions
@@ -216,6 +248,23 @@ def afficher_classement(screen):
     overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
     overlay.fill(OVERLAY_COLOR)
 
+    # Create button details
+    button_size = int(150 * scale_factor)
+    button_x = screen_width // 2 - button_size // 2
+    button_y = screen_height - button_size - int(40 * scale_factor)
+
+    # Create button rect for collision detection if Button_class is not provided
+    button_rect = pygame.Rect(button_x, button_y, button_size, button_size)
+
+    # Create button object if Button_class is provided
+    back_button = None
+    if Button_class:
+        back_button = Button_class(
+            button_x, button_y,
+            button_size, button_size,
+            "Retour", "back"
+        )
+
     # Chargement et tri des scores
     scores = []
     try:
@@ -225,20 +274,16 @@ def afficher_classement(screen):
             try:
                 with open('scores.csv', 'r', newline='', encoding=encoding) as fichier:
                     lecteur = csv.reader(fichier)
-                    # Sauter la première ligne (en-têtes)
-                    next(lecteur, None)
+                    next(lecteur, None)  # Sauter la première ligne
                     for ligne in lecteur:
                         if len(ligne) >= 3:  # Format: Date, Pseudo, Score
                             try:
                                 date, nom, score = ligne[0], ligne[1], int(ligne[2])
                                 scores.append((nom, score))
                             except (ValueError, IndexError):
-                                # Ignorer les lignes avec des données non valides
                                 continue
-                # Si on arrive ici sans erreur, on a trouvé le bon encodage
-                break
+                break  # Si on arrive ici sans erreur, on a trouvé le bon encodage
             except UnicodeDecodeError:
-                # Essayer l'encodage suivant
                 continue
     except (FileNotFoundError, IOError):
         # Créer un fichier vide s'il n'existe pas
@@ -248,19 +293,19 @@ def afficher_classement(screen):
 
     # Trier les scores par ordre décroissant
     scores.sort(key=lambda x: x[1], reverse=True)
-
-    # Garder seulement le top 5
-    top_scores = scores[:5]
+    top_scores = scores[:5]  # Top 5
 
     # Initialiser les polices
     pygame.font.init()
     titre_font = pygame.font.SysFont('Arial', 48, bold=True)
     score_font = pygame.font.SysFont('Arial', 36)
-    button_font = pygame.font.SysFont('Arial', 30)
+    button_font = pygame.font.SysFont('Arial', 32)
 
     run = True
     while run:
-        # Dessiner l'arrière-plan avec l'image et l'overlay
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Dessiner l'arrière-plan et l'overlay
         screen.blit(background, (0, 0))
         screen.blit(overlay, (0, 0))
 
@@ -288,15 +333,20 @@ def afficher_classement(screen):
             message_rect = message.get_rect(center=(screen_width // 2, 250))
             screen.blit(message, message_rect)
 
-        # Dessiner le bouton retour
-        button_rect = pygame.Rect(screen_width // 2 - 100, screen_height - 100, 200, 50)
-        mouse_pos = pygame.mouse.get_pos()
-        button_color = BUTTON_HOVER if button_rect.collidepoint(mouse_pos) else BUTTON_COLOR
+        # Draw the back button
+        if back_button:
+            # Use the Button class if provided
+            back_button.draw(screen, mouse_pos)
+        else:
+            # Draw a simple button if Button class is not provided
+            button_color = (80, 150, 230) if button_rect.collidepoint(mouse_pos) else (50, 120, 200)
+            pygame.draw.rect(screen, button_color, button_rect, border_radius=10)
+            pygame.draw.rect(screen, (255, 255, 255), button_rect, width=2, border_radius=10)
 
-        pygame.draw.rect(screen, button_color, button_rect, border_radius=10)
-        retour_texte = button_font.render("Retour", True, TEXT_COLOR)
-        retour_rect = retour_texte.get_rect(center=button_rect.center)
-        screen.blit(retour_texte, retour_rect)
+            # Add text to button
+            button_text = button_font.render("Retour", True, (255, 255, 255))
+            text_rect = button_text.get_rect(center=button_rect.center)
+            screen.blit(button_text, text_rect)
 
         # Gestion des événements
         for event in pygame.event.get():
@@ -306,7 +356,10 @@ def afficher_classement(screen):
                 if event.key == pygame.K_ESCAPE:
                     return "menu"
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if button_rect.collidepoint(event.pos):
+                if back_button and hasattr(back_button, 'is_clicked'):
+                    if back_button.is_clicked(mouse_pos, event):
+                        return "menu"
+                elif button_rect.collidepoint(mouse_pos):
                     return "menu"
 
         pygame.display.flip()
