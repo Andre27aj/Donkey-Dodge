@@ -52,3 +52,5 @@ logs/
 # PyInstaller
 *.manifest
 *.spec
+
+scores.csv
