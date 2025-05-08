@@ -316,10 +316,6 @@ class Joueur:
             self.jump_charging = False
             self.jump_charge = 0
 
-
-
-
-
         # Drop from platform
         if keys[
             pygame.K_DOWN] and self.on_ground and self.platform_touching and self.platform_touching != self.floor_rect:

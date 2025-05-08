@@ -55,3 +55,4 @@ class Launcher:
         elif self.y > max_y - self.height:
             self.y = max_y - self.height
         self.rect.y = self.y
+
