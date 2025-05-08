@@ -196,13 +196,15 @@ class RulesScreen:
         return (title_surf, title_rect)
 
     def create_back_button(self):
-        return Button(
-            self.screen.width // 2 - int(150 * SCALE_FACTOR),
-            self.screen.height - int(100 * SCALE_FACTOR),
-            int(300 * SCALE_FACTOR), int(60 * SCALE_FACTOR),
-            "Retour au menu", "back"
-        )
+        # Create a square button for consistency with other buttons
+        button_size = int(150 * SCALE_FACTOR)
 
+        return Button(
+            self.screen.width // 2 - button_size // 2,  # Center horizontally
+            self.screen.height - button_size - int(40 * SCALE_FACTOR),  # Position at bottom with margin
+            button_size, button_size,  # Square button
+            "Retour", "back"  # Shorter text to fit in square button
+        )
     def handle_events(self, mouse_pos):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
