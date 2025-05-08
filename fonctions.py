@@ -1,6 +1,6 @@
-import pygame
 from constante import *
-
+import csv
+import os
 
 def draw_hearts(screen, lives, heart_img):
     heart_margin = int(20 * SCALE_FACTOR)
@@ -190,20 +190,30 @@ def game_over(screen, score=0):
         pygame.display.flip()
         pygame.time.delay(10)
 
+
 def afficher_classement(screen):
-    import pygame
-    import csv
-    import os
 
     # Couleurs
-    BACKGROUND = (25, 25, 112)  # Bleu foncé
     TEXT_COLOR = (255, 255, 255)  # Blanc
     TITLE_COLOR = (255, 215, 0)  # Or
     BUTTON_COLOR = (70, 130, 180)  # Bleu acier
     BUTTON_HOVER = (100, 149, 237)  # Bleu clair
+    OVERLAY_COLOR = (0, 0, 0, 128)  # Noir semi-transparent
 
     # Dimensions
     screen_width, screen_height = screen.get_size()
+
+    # Chargement de l'image de fond
+    try:
+        background = pygame.image.load("Image/Back.png")
+        background = pygame.transform.scale(background, (screen_width, screen_height))
+    except pygame.error:
+        background = pygame.Surface((screen_width, screen_height))
+        background.fill((25, 25, 112))  # Fallback en bleu foncé
+
+    # Overlay semi-transparent
+    overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+    overlay.fill(OVERLAY_COLOR)
 
     # Chargement et tri des scores
     scores = []
@@ -249,8 +259,9 @@ def afficher_classement(screen):
 
     run = True
     while run:
-        # Dessiner l'arrière-plan
-        screen.fill(BACKGROUND)
+        # Dessiner l'arrière-plan avec l'image et l'overlay
+        screen.blit(background, (0, 0))
+        screen.blit(overlay, (0, 0))
 
         # Dessiner le titre
         titre = titre_font.render("TOP 5 DES MEILLEURS SCORES", True, TITLE_COLOR)
@@ -261,7 +272,7 @@ def afficher_classement(screen):
         if top_scores:
             y_pos = 180
             for i, (nom, score) in enumerate(top_scores):
-                rang = score_font.render(f"{i+1}.", True, TEXT_COLOR)
+                rang = score_font.render(f"{i + 1}.", True, TEXT_COLOR)
                 screen.blit(rang, (screen_width // 4 - 40, y_pos))
 
                 nom_texte = score_font.render(f"{nom}", True, TEXT_COLOR)

@@ -1,6 +1,6 @@
 import pygame
 import sys
-from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
+from constante import SCALE_FACTOR
 from jeu import main_game
 from fonctions import afficher_classement
 
@@ -364,6 +364,7 @@ def menu_principal():
     MainMenu.draw = original_draw_menu
     RulesScreen.draw = original_draw_rules
     LeaderboardScreen.draw = original_draw_leaderboard
+
     def run(self):
         while self.running:
             mouse_pos = pygame.mouse.get_pos()
@@ -373,5 +374,3 @@ def menu_principal():
 
         return self.result  # Renvoie l'action à effectuer
 
-if __name__ == "__main__":
-    menu_principal()
