@@ -250,8 +250,8 @@ class BananeManager:
             self._draw_pause_screen(screen)
 
         # Afficher le score
-        font = pygame.font.SysFont('Arial', int(32 * self.scale_factor))
-        score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
+        font = pygame.font.SysFont('Arial', 48)
+        score_text = font.render(f"Score: {self.score}", True, (244, 210, 34))
 
         score_rect = score_text.get_rect()
         score_rect.centerx = screen.get_width() // 2
