@@ -1,7 +1,8 @@
 import pygame
 import sys
-from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
+from constante import SCALE_FACTOR
 from jeu import main_game
+from fonctions import afficher_classement
 
 
 class Button:
@@ -145,11 +146,15 @@ class RulesScreen:
         self.back_button = self.create_back_button()
         self.rules = [
             "Bienvenue dans Donkey Dodge !",
-            "Évitez les bananes lancées par les singes sur les côtés.",
+            "Choisissez votre camp, soit Singe soit Guerrier !",
+            "Les Guerriers :",
+            "Evitez les bananes lancées par les singes sur les côtés.",
             "Utilisez les flèches directionnelles pour vous déplacer.",
             "Appuyez sur la flèche du haut pour sauter.",
             "Utilisez SHIFT droit pour effectuer un dash.",
-            "Touche A pour viser et tirer depuis la gauche, D pour la droite.",
+            "Les Singes :",
+            "Touche A pour viser et tirer depuis le singe de gauche, D pour la droite.",
+            "Vous pouvez bouger de haut en bas avec W et S.",
             "Vous avez 3 vies. Chaque collision avec une banane vous fait perdre une vie.",
             "Appuyez sur ESPACE pour mettre le jeu en pause."
         ]
@@ -201,7 +206,7 @@ class RulesScreen:
     def run(self):
         while self.running:
             mouse_pos = pygame.mouse.get_pos()
-            self.handle_events(mouse_pos)
+            (self.handle_events(mouse_pos))
             self.draw(mouse_pos)
             self.screen.clock.tick(60)
 
@@ -210,17 +215,30 @@ class LeaderboardScreen:
     def __init__(self, screen):
         self.screen = screen
         self.running = True
+        # Ces attributs sont nécessaires pour éviter les erreurs mais ne seront pas utilisés
         self.title = self.create_title()
         self.back_button = self.create_back_button()
         self.text_font = pygame.font.SysFont('Arial', int(24 * SCALE_FACTOR))
 
+        # Appel direct à la fonction d'affichage du classement
+        self.result = afficher_classement(self.screen.get_surface())
+
+        # Gestion du résultat
+        if self.result == "quit":
+            pygame.quit()
+            sys.exit()
+        elif self.result == "menu":
+            self.running = False
+
     def create_title(self):
+        # Cette méthode est définie mais n'est pas utilisée
         title_font = pygame.font.SysFont('Arial', int(48 * SCALE_FACTOR), bold=True)
         title_surf = title_font.render("Classement", True, (255, 255, 255))
         title_rect = title_surf.get_rect(center=(self.screen.width // 2, int(100 * SCALE_FACTOR)))
         return (title_surf, title_rect)
 
     def create_back_button(self):
+        # Cette méthode est définie mais n'est pas utilisée
         return Button(
             self.screen.width // 2 - int(150 * SCALE_FACTOR),
             self.screen.height - int(100 * SCALE_FACTOR),
@@ -229,37 +247,16 @@ class LeaderboardScreen:
         )
 
     def handle_events(self, mouse_pos):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if self.back_button.is_clicked(mouse_pos, event):
-                self.running = False
+        # Cette méthode est définie mais n'est pas utilisée
+        pass
 
     def draw(self, mouse_pos):
-        # Afficher le fond
-        self.screen.get_surface().blit(self.screen.background, (0, 0))
-
-        # Afficher le titre
-        self.screen.get_surface().blit(self.title[0], self.title[1])
-
-        # Afficher le message temporaire
-        message = self.text_font.render("Fonctionnalité à venir prochainement!", True, (255, 255, 255))
-        message_rect = message.get_rect(center=(self.screen.width // 2, self.screen.height // 2))
-        self.screen.get_surface().blit(message, message_rect)
-
-        # Afficher le bouton de retour
-        self.back_button.draw(self.screen.get_surface(), mouse_pos)
-
-        pygame.display.flip()
+        # Cette méthode est définie mais n'est pas utilisée
+        pass
 
     def run(self):
-        while self.running:
-            mouse_pos = pygame.mouse.get_pos()
-            self.handle_events(mouse_pos)
-            self.draw(mouse_pos)
-            self.screen.clock.tick(60)
+        # Cette méthode est simplifiée car tout est traité dans __init__
+        return self.result
 
 def menu_principal():
     pygame.init()
@@ -281,9 +278,12 @@ def menu_principal():
     screen.overlay = overlay
 
     # Modification de la méthode draw de MainMenu
-    original_draw = MainMenu.draw
+    original_draw_menu = MainMenu.draw
+    original_draw_rules = RulesScreen.draw
+    original_draw_leaderboard = LeaderboardScreen.draw
 
-    def new_draw(self, mouse_pos):
+    # Nouvelle méthode draw pour MainMenu
+    def new_draw_menu(self, mouse_pos):
         # Afficher le fond
         self.screen.get_surface().blit(self.screen.background, (0, 0))
 
@@ -299,66 +299,71 @@ def menu_principal():
 
         pygame.display.flip()
 
-    # Remplacer temporairement la méthode draw
-    MainMenu.draw = new_draw
+    # Nouvelle méthode draw pour RulesScreen
+    def new_draw_rules(self, mouse_pos):
+        # Afficher le fond
+        self.screen.get_surface().blit(self.screen.background, (0, 0))
 
-    main_menu = MainMenu(screen)
-    main_menu.run()
-
-    # Restaurer la méthode originale
-    MainMenu.draw = original_draw
-
-    def create_title(self):
-        title_font = pygame.font.SysFont('Arial', int(48 * SCALE_FACTOR), bold=True)
-        title_surf = title_font.render("Pause", True, (255, 255, 255))
-        title_rect = title_surf.get_rect(center=(self.screen.width // 2, int(100 * SCALE_FACTOR)))
-        return (title_surf, title_rect)
-
-    def create_buttons(self):
-        button_width = int(300 * SCALE_FACTOR)
-        button_height = int(70 * SCALE_FACTOR)
-        button_spacing = int(30 * SCALE_FACTOR)
-
-        x_pos = self.screen.width // 2 - button_width // 2
-        y_start = self.screen.height // 2 - button_height // 2
-
-        return [
-            Button(x_pos, y_start - button_height - button_spacing,
-                   button_width, button_height, "Continuer", "continue"),
-            Button(x_pos, y_start,
-                   button_width, button_height, "Retour au menu", "menu"),
-            Button(x_pos, y_start + button_height + button_spacing,
-                   button_width, button_height, "Quitter", "quit")
-        ]
-
-    def handle_events(self, mouse_pos):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.result = "continue"
-                    self.running = False
-
-            for button in self.buttons:
-                if button.is_clicked(mouse_pos, event):
-                    self.result = button.action
-                    self.running = False
-
-    def draw(self, mouse_pos):
         # Appliquer l'overlay semi-transparent
-        self.screen.get_surface().blit(self.overlay, (0, 0))
+        self.screen.get_surface().blit(self.screen.overlay, (0, 0))
 
         # Afficher le titre
         self.screen.get_surface().blit(self.title[0], self.title[1])
 
-        # Afficher les boutons
-        for button in self.buttons:
-            button.draw(self.screen.get_surface(), mouse_pos)
+        # Utiliser une police plus grande pour les règles
+        rules_font = pygame.font.SysFont('Arial', int(36 * SCALE_FACTOR))  # Augmenter la taille (était 24 avant)
+
+        # Ajuster l'espacement vertical pour la nouvelle taille de police
+        line_spacing = int(50 * SCALE_FACTOR)  # Augmenter l'espacement entre les lignes (était 40 avant)
+
+        # Centrer les règles horizontalement et verticalement
+        total_rules_height = len(self.rules) * line_spacing
+        starting_y = (self.screen.height - total_rules_height) // 2  # Position Y pour centrer verticalement
+
+        # Afficher les règles centrées avec une police plus grande
+        for i, rule in enumerate(self.rules):
+            text = rules_font.render(rule, True, (244, 210, 34))
+            text_rect = text.get_rect(center=(self.screen.width // 2, starting_y + i * line_spacing))
+            self.screen.get_surface().blit(text, text_rect)
+
+        # Afficher le bouton de retour
+        self.back_button.draw(self.screen.get_surface(), mouse_pos)
 
         pygame.display.flip()
+
+    # Nouvelle méthode draw pour LeaderboardScreen
+    def new_draw_leaderboard(self, mouse_pos):
+        # Afficher le fond
+        self.screen.get_surface().blit(self.screen.background, (0, 0))
+
+        # Appliquer l'overlay semi-transparent
+        self.screen.get_surface().blit(self.screen.overlay, (0, 0))
+
+        # Afficher le titre
+        self.screen.get_surface().blit(self.title[0], self.title[1])
+
+        # Afficher le message temporaire
+        message = self.text_font.render("Fonctionnalité à venir prochainement!", True, (255, 255, 255))
+        message_rect = message.get_rect(center=(self.screen.width // 2, self.screen.height // 2))
+        self.screen.get_surface().blit(message, message_rect)
+
+        # Afficher le bouton de retour
+        self.back_button.draw(self.screen.get_surface(), mouse_pos)
+
+        pygame.display.flip()
+
+    # Remplacer temporairement les méthodes draw
+    MainMenu.draw = new_draw_menu
+    RulesScreen.draw = new_draw_rules
+    LeaderboardScreen.draw = new_draw_leaderboard
+
+    main_menu = MainMenu(screen)
+    main_menu.run()
+
+    # Restaurer les méthodes originales (bonne pratique)
+    MainMenu.draw = original_draw_menu
+    RulesScreen.draw = original_draw_rules
+    LeaderboardScreen.draw = original_draw_leaderboard
 
     def run(self):
         while self.running:
@@ -369,5 +374,3 @@ def menu_principal():
 
         return self.result  # Renvoie l'action à effectuer
 
-if __name__ == "__main__":
-    menu_principal()
