@@ -1,7 +1,6 @@
 import pygame
 from constante import SCALE_FACTOR
 
-
 class Platform:
     def __init__(self, x, y, width, height, image_path):
         # Chargement de l'image de la plateforme depuis le chemin fourni

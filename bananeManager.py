@@ -2,7 +2,6 @@ import random
 import math
 from banane import Banane
 
-
 class BananeManager:
     def __init__(self, scale_factor, max_bananes=2):
         self.bananes = []

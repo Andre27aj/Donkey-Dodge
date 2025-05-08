@@ -3,7 +3,6 @@ from constante import SCALE_FACTOR
 import csv
 import os
 
-
 def draw_hearts(screen, lives, heart_img):
     heart_margin = int(20 * SCALE_FACTOR)
     heart_size = int(30 * SCALE_FACTOR)

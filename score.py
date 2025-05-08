@@ -2,7 +2,6 @@ import csv
 import os
 from datetime import datetime
 
-
 class ScoreManager:
     def __init__(self, fichier='scores.csv'):
         self.fichier = fichier

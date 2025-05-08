@@ -42,3 +42,4 @@ class Banane:
 
     def collides_with(self, player):
         return self.rect.colliderect(player.rect)
+

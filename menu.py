@@ -4,7 +4,6 @@ from constante import SCALE_FACTOR
 from jeu import main_game
 from fonctions import afficher_classement
 
-
 class Button:
     def __init__(self, x, y, width, height, text, action, border_radius=15):
         self.rect = pygame.Rect(x, y, width, height)

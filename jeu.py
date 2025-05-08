@@ -243,7 +243,6 @@ def main_game(existing_screen=None):
 
             action = game_over(screen, banane_manager.score)
 
-
             if action == "rematch":
                 # recommencer le jeu
                 joueur.lives = joueur.max_lives
