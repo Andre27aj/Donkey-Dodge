@@ -1,6 +1,5 @@
 import pygame
 
-pygame.init()
 # Obtenir la résolution de l'écran
 info = pygame.display.Info()
 SCREEN_WIDTH = int(info.current_w * 0.9)
