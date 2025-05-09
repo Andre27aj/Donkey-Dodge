@@ -268,13 +268,12 @@ def afficher_classement(screen, Button_class=None, scale_factor=None):
     # Chargement et tri des scores
     scores = []
     try:
-        # Essayer différents encodages
-        encodings = ['latin1', 'cp1252', 'iso-8859-1', 'utf-8']
-        for encoding in encodings:
+        if os.path.exists('scores.csv'):
             try:
-                with open('scores.csv', 'r', newline='', encoding=encoding) as fichier:
+                # Try UTF-8 first as it's most comprehensive
+                with open('scores.csv', 'r', newline='', encoding='utf-8') as fichier:
                     lecteur = csv.reader(fichier)
-                    next(lecteur, None)  # Sauter la première ligne
+                    next(lecteur, None)  # Skip header
                     for ligne in lecteur:
                         if len(ligne) >= 3:  # Format: Date, Pseudo, Score
                             try:
@@ -282,14 +281,31 @@ def afficher_classement(screen, Button_class=None, scale_factor=None):
                                 scores.append((nom, score))
                             except (ValueError, IndexError):
                                 continue
-                break  # Si on arrive ici sans erreur, on a trouvé le bon encodage
             except UnicodeDecodeError:
-                continue
-    except (FileNotFoundError, IOError):
-        # Créer un fichier vide s'il n'existe pas
-        with open('scores.csv', 'w', newline='', encoding='utf-8') as fichier:
-            writer = csv.writer(fichier)
-            writer.writerow(["Date", "Pseudo", "Score"])  # Ajouter les en-têtes
+                # Fallback to other encodings if UTF-8 fails
+                encodings = ['latin1', 'cp1252', 'iso-8859-1']
+                for encoding in encodings:
+                    try:
+                        with open('scores.csv', 'r', newline='', encoding=encoding) as fichier:
+                            lecteur = csv.reader(fichier)
+                            next(lecteur, None)  # Skip header
+                            for ligne in lecteur:
+                                if len(ligne) >= 3:
+                                    try:
+                                        date, nom, score = ligne[0], ligne[1], int(ligne[2])
+                                        scores.append((nom, score))
+                                    except (ValueError, IndexError):
+                                        continue
+                        break  # We found a working encoding, so stop trying
+                    except UnicodeDecodeError:
+                        continue
+        else:
+            # Create empty file if it doesn't exist
+            with open('scores.csv', 'w', newline='', encoding='utf-8') as fichier:
+                writer = csv.writer(fichier)
+                writer.writerow(["Date", "Pseudo", "Score"])  # Add headers
+    except IOError as e:
+        print(f"Error accessing scores file: {e}")
 
     # Trier les scores par ordre décroissant
     scores.sort(key=lambda x: x[1], reverse=True)
