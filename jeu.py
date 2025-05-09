@@ -135,7 +135,7 @@ def main_game(existing_screen=None):
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_a and key_a_pressed:
-                        key_a_pressed = False
+                        key_q_pressed = False
                         banane_manager.release_shot_left(lanceur_gauche.rect, current_time)
                     if event.key == pygame.K_d and key_d_pressed:
                         key_d_pressed = False
@@ -156,7 +156,7 @@ def main_game(existing_screen=None):
 
             # Gestion des contrôles des lanceurs avec les méthodes de la classe
             keys = pygame.key.get_pressed()
-            if keys[pygame.K_w]:
+            if keys[pygame.K_z]:
                 lanceur_gauche.move_up()
                 lanceur_droite.move_up()
             if keys[pygame.K_s]:
