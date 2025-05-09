@@ -289,3 +289,15 @@ class BananeManager:
         """Activer ou désactiver la pause"""
         self.paused = not self.paused
         return self.paused
+
+    def reset_launch_states(self):
+        """Reset all launch-related states to their initial values"""
+        self.aiming_left = False
+        self.aiming_right = False
+        self.left_aim_start_time = 0
+        self.right_aim_start_time = 0
+        self.last_left_fire_time = 0
+        self.last_right_fire_time = 0
+        self.bananes_gauche = []
+        self.bananes_droite = []
+        self.bananes_a_compter = []

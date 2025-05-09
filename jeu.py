@@ -244,18 +244,29 @@ def main_game(existing_screen=None):
             action = game_over(screen, banane_manager.score)
 
             if action == "rematch":
-                # recommencer le jeu
+                # Reset player
                 joueur.lives = joueur.max_lives
                 joueur.invincible = False
-                banane_manager.bananes = []
-                banane_manager.score = 0
                 joueur.rect.x = SCREEN_WIDTH // 2 - 65
                 joueur.rect.y = SCREEN_HEIGHT - 300
+
+                # Reset game state
+                banane_manager.bananes = []
+                banane_manager.score = 0
+                banane_manager.reset_launch_states()  # Add this line
+
+                # Reset launchers
+                lanceur_gauche.reset()
+                lanceur_droite.reset()
+
+                # Reset any targeting variables
+                dernier_tir_gauche = y_median
+                dernier_tir_droite = y_median
+
             elif action == "menu":
                 return "menu"
             else:
                 run = False
-
         if not run :
             return "quit"
     pygame.quit()

@@ -56,3 +56,12 @@ class Launcher:
             self.y = max_y - self.height
         self.rect.y = self.y
 
+    # Add this to the Launcher class in lanceur.py
+    def reset(self):
+        """Reset launcher to initial state"""
+        # Reset any state variables
+        self.last_fire_time = 0
+        # Reset position if needed
+        self.y = self.rect.y  # Keep current y-position
+        self.target_y = self.y
+        # Reset any cooldown timers or other state variables you might have
