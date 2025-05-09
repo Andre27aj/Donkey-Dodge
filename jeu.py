@@ -102,7 +102,7 @@ def main_game(existing_screen=None):
     dernier_tir_droite = y_median
 
     # Variables pour suivre l'état des touches
-    key_a_pressed = False
+    key_q_pressed = False   #il faut modifier ca si on veut passer en qwerty
     key_d_pressed = False
 
     clock = pygame.time.Clock()
@@ -126,16 +126,16 @@ def main_game(existing_screen=None):
             if not banane_manager.paused:
                 # Gestion des événements de touche pour le système de visée
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_a:
-                        key_a_pressed = True
+                    if event.key == pygame.K_q:                            #il faut modifier ca si on veut passer en qwerty
+                        key_q_pressed = True                            #il faut modifier ca si on veut passer en qwerty
                         banane_manager.start_aiming_left(current_time)
                     if event.key == pygame.K_d:
                         key_d_pressed = True
                         banane_manager.start_aiming_right(current_time)
 
                 if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_a and key_a_pressed:
-                        key_q_pressed = False
+                    if event.key == pygame.K_q and key_q_pressed: #il faut modifier ca si on veut passer en qwerty
+                        key_q_pressed = False                   #il faut modifier ca si on veut passer en qwerty
                         banane_manager.release_shot_left(lanceur_gauche.rect, current_time)
                     if event.key == pygame.K_d and key_d_pressed:
                         key_d_pressed = False
@@ -156,7 +156,7 @@ def main_game(existing_screen=None):
 
             # Gestion des contrôles des lanceurs avec les méthodes de la classe
             keys = pygame.key.get_pressed()
-            if keys[pygame.K_z]:
+            if keys[pygame.K_z]: #il faut modifier ca si on veut passer en qwerty
                 lanceur_gauche.move_up()
                 lanceur_droite.move_up()
             if keys[pygame.K_s]:
