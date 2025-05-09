@@ -314,6 +314,14 @@ def menu_principal():
     original_draw_menu = MainMenu.draw
     original_draw_rules = RulesScreen.draw
     original_draw_leaderboard = LeaderboardScreen.draw
+    # Initialize audio manager
+    from audioManager import AudioManager
+    audio_manager = AudioManager()
+
+    # Load and play background music
+    audio_manager.load_music("Audio/theme.mp3")
+    audio_manager.play_music()
+
 
     # Nouvelle méthode draw pour MainMenu
     def new_draw_menu(self, mouse_pos):
