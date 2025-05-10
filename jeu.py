@@ -1,17 +1,44 @@
 import pygame
-from constante import SCREEN_WIDTH, SCREEN_HEIGHT, SCALE_FACTOR
+from constante import *
 from lanceur import Launcher  # Votre classe de lanceurs
 from bananeManager import BananeManager  # Gestionnaire de bananes
 from joueur import Joueur  # Votre classe joueur
 from fonctions import game_over
 from score import ScoreManager
+from audioManager import *
 
 def main_game(existing_screen=None):
     global screen
-
     # Initialisez-le au début du jeu
     score_manager = ScoreManager()
+    audioManager = AudioManager()
+    audioManager.load_music("Audio/theme.mp3")  # Optional
+    audioManager.play_music()  # Optional
 
+    # Utilisation de l'écran existant, sinon en créer un nouveau
+    if existing_screen:
+        screen = existing_screen
+        SCREEN_WIDTH = screen.get_width()
+        SCREEN_HEIGHT = screen.get_height()
+    else:
+        # Initialiser pygame si ce n'est pas déjà fait
+        if not pygame.get_init():
+            pygame.init()
+
+        # Obtenir la taille de l'écran
+        info = pygame.display.Info()
+        SCREEN_WIDTH = int(info.current_w * 0.8)
+        SCREEN_HEIGHT = int(info.current_h * 0.8)
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    # Create sound button AFTER defining SCREEN_WIDTH
+    sound_button_size = int(30 * SCALE_FACTOR)
+    sound_button = SoundButton(
+        SCREEN_WIDTH - sound_button_size - 10,  # 10px from right edge
+        10,  # 10px from top
+        sound_button_size,
+        audioManager  # Fixed typo here - was audioMnager
+    )
     # Utilisation de l'écran existant, sinon en créer un nouveau
     if existing_screen:
         screen = existing_screen
@@ -109,11 +136,14 @@ def main_game(existing_screen=None):
     run = True
 
     while run:
+        mouse_pos = pygame.mouse.get_pos()
         current_time = pygame.time.get_ticks()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-
+                # Add this line for sound button handling
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                sound_button.handle_click(pygame.mouse.get_pos())
             # Gestion de la pause avec la touche espace
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 paused = banane_manager.toggle_pause()
@@ -121,6 +151,13 @@ def main_game(existing_screen=None):
                 if paused:
                     joueur.velocity_x = 0
                     joueur.velocity_y = 0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "quit"
+
+            # Handle sound button click
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                sound_button.handle_click(pygame.mouse.get_pos())
 
             # Ne traiter les autres commandes que si le jeu n'est pas en pause
             if not banane_manager.paused:
@@ -235,6 +272,11 @@ def main_game(existing_screen=None):
                              (joueur.rect.centerx - cooldown_width // 2,
                               joueur.rect.top - 20,
                               cooldown_fill, cooldown_height))
+            # Draw the sound button
+
+        sound_button.draw(screen)
+
+
 
         pygame.display.flip()
         clock.tick(60)  # Limiter à 60 FPS
@@ -269,4 +311,6 @@ def main_game(existing_screen=None):
                 run = False
         if not run :
             return "quit"
+
+
     pygame.quit()

@@ -310,18 +310,27 @@ def menu_principal():
     # Ajouter l'overlay à l'objet screen pour y accéder plus tard
     screen.overlay = overlay
 
-    # Modification de la méthode draw de MainMenu
-    original_draw_menu = MainMenu.draw
-    original_draw_rules = RulesScreen.draw
-    original_draw_leaderboard = LeaderboardScreen.draw
     # Initialize audio manager
-    from audioManager import AudioManager
+    from audioManager import AudioManager, SoundButton
     audio_manager = AudioManager()
 
     # Load and play background music
     audio_manager.load_music("Audio/theme.mp3")
     audio_manager.play_music()
 
+    # Create the sound button
+    button_size = int(50 * SCALE_FACTOR)
+    sound_button = SoundButton(
+        x=width - button_size - int(20 * SCALE_FACTOR),
+        y=int(20 * SCALE_FACTOR),
+        size=button_size,
+        audio_manager=audio_manager
+    )
+
+    # Modification de la méthode draw de MainMenu
+    original_draw_menu = MainMenu.draw
+    original_draw_rules = RulesScreen.draw
+    original_draw_leaderboard = LeaderboardScreen.draw
 
     # Nouvelle méthode draw pour MainMenu
     def new_draw_menu(self, mouse_pos):
@@ -338,7 +347,39 @@ def menu_principal():
         for button in self.buttons:
             button.draw(self.screen.get_surface(), mouse_pos)
 
+        # Draw the sound button
+        sound_button.draw(self.screen.get_surface())
+
         pygame.display.flip()
+
+    # Nouvelle méthode handle_events pour MainMenu
+    original_handle_events_menu = MainMenu.handle_events
+
+    def new_handle_events_menu(self, mouse_pos):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Handle sound button click
+                if sound_button.handle_click(mouse_pos):
+                    continue
+
+                # Handle other buttons
+                for button in self.buttons:
+                    if button.is_clicked(mouse_pos, event):
+                        if button.action == "jouer":
+                            main_game(self.screen.get_surface())
+                        elif button.action == "regles":
+                            rules_screen = RulesScreen(self.screen)
+                            rules_screen.run()
+                        elif button.action == "classement":
+                            leaderboard_screen = LeaderboardScreen(self.screen)
+                            leaderboard_screen.run()
+                        elif button.action == "quitter":
+                            pygame.quit()
+                            sys.exit()
 
     # Nouvelle méthode draw pour RulesScreen
     def new_draw_rules(self, mouse_pos):
@@ -370,7 +411,29 @@ def menu_principal():
         # Afficher le bouton de retour
         self.back_button.draw(self.screen.get_surface(), mouse_pos)
 
+        # Draw the sound button
+        sound_button.draw(self.screen.get_surface())
+
         pygame.display.flip()
+
+    # Original handle events for RulesScreen
+    original_handle_events_rules = RulesScreen.handle_events
+
+    # New handle_events for RulesScreen
+    def new_handle_events_rules(self, mouse_pos):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Handle sound button click
+                if sound_button.handle_click(mouse_pos):
+                    continue
+
+                # Handle back button
+                if self.back_button.is_clicked(mouse_pos, event):
+                    self.running = False
 
     # Nouvelle méthode draw pour LeaderboardScreen
     def new_draw_leaderboard(self, mouse_pos):
@@ -391,11 +454,16 @@ def menu_principal():
         # Afficher le bouton de retour
         self.back_button.draw(self.screen.get_surface(), mouse_pos)
 
+        # Draw the sound button
+        sound_button.draw(self.screen.get_surface())
+
         pygame.display.flip()
 
-    # Remplacer temporairement les méthodes draw
+    # Remplacer temporairement les méthodes draw et handle_events
     MainMenu.draw = new_draw_menu
+    MainMenu.handle_events = new_handle_events_menu
     RulesScreen.draw = new_draw_rules
+    RulesScreen.handle_events = new_handle_events_rules
     LeaderboardScreen.draw = new_draw_leaderboard
 
     main_menu = MainMenu(screen)
@@ -403,15 +471,7 @@ def menu_principal():
 
     # Restaurer les méthodes originales (bonne pratique)
     MainMenu.draw = original_draw_menu
+    MainMenu.handle_events = original_handle_events_menu
     RulesScreen.draw = original_draw_rules
+    RulesScreen.handle_events = original_handle_events_rules
     LeaderboardScreen.draw = original_draw_leaderboard
-
-    def run(self):
-        while self.running:
-            mouse_pos = pygame.mouse.get_pos()
-            self.handle_events(mouse_pos)
-            self.draw(mouse_pos)
-            self.screen.clock.tick(60)
-
-        return self.result  # Renvoie l'action à effectuer
-

@@ -4,7 +4,6 @@ import os
 
 class AudioManager:
     """Manages all audio for the game including music and sound effects"""
-
     def __init__(self):
         # Initialize pygame mixer
         pygame.mixer.init()
@@ -13,6 +12,27 @@ class AudioManager:
         # Default volumes
         self.music_volume = 0.5
         self.effects_volume = 0.7
+        # Mute state
+        self.muted = False
+        # Store original volumes for unmuting
+        self.original_music_volume = self.music_volume
+        self.original_effects_volume = self.effects_volume
+
+    def toggle_mute(self):
+        """Toggle mute/unmute for all audio"""
+        if self.muted:
+            # Unmute - restore previous volumes
+            self.set_music_volume(self.original_music_volume)
+            self.set_effects_volume(self.original_effects_volume)
+            self.muted = False
+        else:
+            # Mute - save current volumes and set to 0
+            self.original_music_volume = self.music_volume
+            self.original_effects_volume = self.effects_volume
+            self.set_music_volume(0)
+            self.set_effects_volume(0)
+            self.muted = True
+        return self.muted
 
     def load_music(self, path):
         """
@@ -94,3 +114,47 @@ class AudioManager:
         self.effects_volume = max(0.0, min(1.0, volume))
         for sound in self.sound_effects.values():
             sound.set_volume(self.effects_volume)
+
+class SoundButton:
+    def __init__(self, x, y, size, audio_manager):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.audio_manager = audio_manager
+
+        # Load sound on/off icons
+        try:
+            self.sound_on_img = pygame.image.load('Image/soundOn.png')
+            self.sound_off_img = pygame.image.load('Image/soundOff.png')
+
+            # Scale images to requested size
+            self.sound_on_img = pygame.transform.scale(self.sound_on_img, (size, size))
+            self.sound_off_img = pygame.transform.scale(self.sound_off_img, (size, size))
+        except pygame.error:
+            # Fallback to text if images aren't found
+            self.sound_on_img = None
+            self.sound_off_img = None
+            self.font = pygame.font.SysFont('Arial', size)
+            self.sound_on_text = self.font.render("🔊", True, (255, 255, 255))
+            self.sound_off_text = self.font.render("🔇", True, (255, 255, 255))
+
+        # Create rect for collision detection
+        self.rect = pygame.Rect(x, y, size, size)
+
+    def draw(self, screen):
+        if self.audio_manager.muted:
+            if self.sound_off_img:
+                screen.blit(self.sound_off_img, (self.x, self.y))
+            else:
+                screen.blit(self.sound_off_text, (self.x, self.y))
+        else:
+            if self.sound_on_img:
+                screen.blit(self.sound_on_img, (self.x, self.y))
+            else:
+                screen.blit(self.sound_on_text, (self.x, self.y))
+
+    def handle_click(self, pos):
+        if self.rect.collidepoint(pos):
+            self.audio_manager.toggle_mute()
+            return True
+        return False
