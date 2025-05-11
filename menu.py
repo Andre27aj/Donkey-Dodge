@@ -181,9 +181,10 @@ class RulesScreen:
             "Utilisez les flèches directionnelles pour vous déplacer.",
             "Appuyez sur la flèche du haut pour sauter.",
             "Utilisez SHIFT droit pour effectuer un dash.",
+            "Esquiver des bananes pour gagner des points!",
             "Les Singes :",
-            "Touche A pour viser et tirer depuis le singe de gauche, D pour la droite.",
-            "Vous pouvez bouger de haut en bas avec W et S.",
+            "Touche Q pour viser et tirer depuis le singe de gauche, D pour la droite.",
+            "Vous pouvez bouger de haut en bas avec Z et S.",
             "Vous avez 3 vies. Chaque collision avec une banane vous fait perdre une vie.",
             "Appuyez sur ESPACE pour mettre le jeu en pause."
         ]
