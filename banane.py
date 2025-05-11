@@ -1,6 +1,8 @@
+# Module définissant la classe Banane utilisée dans le jeu Donkey Dodge
 import pygame
 
 class Banane:
+    """Classe représentant une banane qui est lancée et peut tourner, tomber et détecter des collisions."""
     def __init__(self, pos_x, pos_y, velocity_x, velocity_y, scale_factor, image_path="Image/balle.png"):
         self.pos = [pos_x, pos_y]
         self.vel = [velocity_x, velocity_y]
@@ -8,7 +10,7 @@ class Banane:
         self.rotation_speed = 5
         self.scale_factor = scale_factor
 
-        # Chargement et dimensionnement de l'image
+        # Chargement et redimensionnement de l'image
         self.original_image = pygame.image.load(image_path)
         self.image = pygame.transform.scale(self.original_image,
                                           (int(80 * scale_factor), int(80 * scale_factor)))
@@ -20,15 +22,15 @@ class Banane:
         )
 
     def update(self, dt, gravity):
-        # Mise à jour de la physique
+        # Mise à jour des coordonnées selon la physique
         self.vel[1] += gravity * dt
         self.pos[0] += self.vel[0] * dt * 50
         self.pos[1] += self.vel[1] * dt * 50
 
-        # Mise à jour de la rotation
+        # Mise à jour de la rotation de l'image
         self.rotation += self.rotation_speed
 
-        # Mise à jour du rectangle de collision
+        # Mise à jour de la hitbox (rectangle de collision)
         self.rect.x = self.pos[0] - 40 * self.scale_factor
         self.rect.y = self.pos[1] - 40 * self.scale_factor
 
@@ -42,4 +44,3 @@ class Banane:
 
     def collides_with(self, player):
         return self.rect.colliderect(player.rect)
-

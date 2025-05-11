@@ -291,7 +291,7 @@ class BananeManager:
         return self.paused
 
     def reset_launch_states(self):
-        """Reset all launch-related states to their initial values"""
+        """Réinitialise tous les états liés au tir à leur valeur initiale"""
         self.aiming_left = False
         self.aiming_right = False
         self.left_aim_start_time = 0

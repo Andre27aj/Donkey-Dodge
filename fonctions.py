@@ -125,7 +125,7 @@ def game_over(screen, score=0):
         button_width,
         button_height
     )
-    rematch_text = button_font.render("Rematch", True, (255, 255, 255))
+    rematch_text = button_font.render("Rejouer", True, (255, 255, 255))
     rematch_text_x = rematch_button.centerx - rematch_text.get_width() // 2
     rematch_text_y = rematch_button.centery - rematch_text.get_height() // 2
 
@@ -190,14 +190,14 @@ def game_over(screen, score=0):
                 return "menu"
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if rematch_button.collidepoint(event.pos):
-                    return "rematch"
+                    return "rejouer"
                 if menu_button.collidepoint(event.pos):
                     return "menu"
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return "menu"
                 if event.key == pygame.K_RETURN:
-                    return "rematch"
+                    return "rejouer"
 
         # Gérer les effets de survol des boutons
         mouse_pos = pygame.mouse.get_pos()

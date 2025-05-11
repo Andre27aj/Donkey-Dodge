@@ -299,12 +299,12 @@ class Joueur:
         # Jumping
         if keys[pygame.K_UP]:
             if self.on_ground:
-                # Force de saut immédiate quand on est au sol
+                # Immediate jump force when on the ground
                 horizontal_speed = abs(self.velocity_x)
                 speed_bonus = horizontal_speed * self.speed_jump_bonus
                 self.velocity_y = self.base_jump_force - speed_bonus
 
-                # Empêche un saut trop faible
+                # Prevents a jump that's too weak
                 if self.velocity_y > -10 * SCALE_FACTOR:
                     self.velocity_y = -10 * SCALE_FACTOR
 
@@ -312,7 +312,7 @@ class Joueur:
                 self.jump_charging = False
                 self.jump_charge = 0
         else:
-            # Reset des variables de saut si la touche est relâchée
+            # Reset jump variables if key is released
             self.jump_charging = False
             self.jump_charge = 0
 

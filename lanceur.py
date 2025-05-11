@@ -3,7 +3,7 @@ from constante import SCALE_FACTOR
 
 class Launcher:
     def __init__(self, x, y, is_left=True, scale_factor=SCALE_FACTOR):
-        # Position et taille
+        # Position and size
         self.x = x
         self.y = y
         self.scale_factor = scale_factor
@@ -11,20 +11,20 @@ class Launcher:
         self.width = int(200 * scale_factor)
         self.height = int(200 * scale_factor)
 
-        # Rectangle pour les collisions
+        # Rectangle for collisions
         self.rect = pygame.Rect(x, y, self.width, self.height)
 
-        # Chargement et mise à l'échelle de l'image
+        # Load and scale the image
         self.orig_image = pygame.image.load("Image/lanceur.png")
         self.orig_image = pygame.transform.scale(self.orig_image, (self.width, self.height))
 
-        # Retourner l'image si c'est le lanceur gauche
+        # Flip the image if it's the left launcher
         if is_left:
             self.image = pygame.transform.flip(self.orig_image, True, False)
         else:
             self.image = self.orig_image
 
-        # Interpolation fluide
+        # Smooth interpolation
         self.target_y = y
         self.interpolation_factor = 0.05
         self.speed = 10 * scale_factor
@@ -42,7 +42,7 @@ class Launcher:
         self.target_y = target_y
 
     def update(self):
-        # Interpolation fluide vers la position cible
+        # Smooth interpolation toward target position
         self.y += (self.target_y - self.y) * self.interpolation_factor
         self.rect.y = self.y
 
@@ -62,6 +62,6 @@ class Launcher:
         # Reset any state variables
         self.last_fire_time = 0
         # Reset position if needed
-        self.y = self.rect.y  # Keep current y-position
+        self.y = self.rect.y  # keep current y-position
         self.target_y = self.y
         # Reset any cooldown timers or other state variables you might have
